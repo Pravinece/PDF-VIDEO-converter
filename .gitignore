@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ppt_generation_venv/
+
+# Environment variables
+.env
+*.env
+
+# Uploads (user files — do not commit)
+uploads/
+output/
+
+# Temp video/audio processing files
+*.mp4
+*.wav
+*.mp3
+*.png
+ppt_video_*/
+pptx_video_*/
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Jupyter
+.ipynb_checkpoints/

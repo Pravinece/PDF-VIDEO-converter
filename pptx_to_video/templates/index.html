@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PPTX to Video</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: "Segoe UI", Tahoma, sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+    .header {
+      background: linear-gradient(135deg, #9e173b, #c0294e);
+      color: #fff; padding: 18px 36px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .header h1 { font-size: 20px; }
+    .header .sub { font-size: 12px; color: #ffc000; margin-top: 3px; }
+    .badge { background: #ffc000; color: #9e173b; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+
+    .container { max-width: 680px; margin: 40px auto; padding: 0 20px; }
+
+    .card {
+      background: #fff; border-radius: 12px; padding: 28px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      border-left: 4px solid #9e173b;
+    }
+    .card h2 { font-size: 15px; color: #9e173b; margin-bottom: 20px; }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed #ddd; border-radius: 10px; padding: 36px 20px;
+      text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;
+      margin-bottom: 20px;
+    }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: #9e173b; background: #fff5f7; }
+    .drop-zone .icon { font-size: 40px; margin-bottom: 10px; }
+    .drop-zone p { font-size: 14px; color: #777; }
+    .drop-zone span { color: #9e173b; font-weight: 600; }
+    .drop-zone .hint { font-size: 11px; color: #bbb; margin-top: 6px; }
+    #fileInput { display: none; }
+
+    /* File info bar */
+    .file-info {
+      display: none; align-items: center; gap: 10px;
+      background: #f5f5f5; border-radius: 8px; padding: 10px 14px; margin-bottom: 20px;
+    }
+    .file-info.visible { display: flex; }
+    .file-info .name { font-size: 13px; font-weight: 600; color: #333; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-info .size { font-size: 12px; color: #888; flex-shrink: 0; }
+    .file-info .remove { color: #e53935; cursor: pointer; font-size: 20px; font-weight: bold; flex-shrink: 0; line-height: 1; }
+
+    .btn {
+      width: 100%; padding: 13px; border: none; border-radius: 8px;
+      font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+      background: #ffc000; color: #9e173b;
+    }
+    .btn:hover { background: #e5ac00; }
+    .btn:disabled { background: #ddd; color: #999; cursor: not-allowed; }
+
+    .progress-wrap { display: none; margin-top: 18px; }
+    .progress-bar { height: 10px; background: #eee; border-radius: 5px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #9e173b, #c0294e); width: 0%; transition: width 0.4s; border-radius: 5px; }
+    .progress-label { font-size: 12px; color: #777; margin-top: 6px; text-align: center; }
+
+    .status { margin-top: 12px; font-size: 14px; font-weight: 600; text-align: center; min-height: 22px; }
+    .status.ok  { color: #2e7d32; }
+    .status.err { color: #c62828; }
+
+    .log-box {
+      background: #1a1a2e; border-radius: 8px; padding: 12px;
+      min-height: 90px; max-height: 180px; overflow-y: auto;
+      font-family: monospace; font-size: 12px; color: #e0e0e0; margin-top: 16px;
+    }
+    .log-ok   { color: #66bb6a; }
+    .log-err  { color: #ef5350; }
+    .log-info { color: #42a5f5; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🎬 PPTX → Video</h1>
+    <div class="sub">Convert PowerPoint with voiceover notes to MP4</div>
+  </div>
+  <div class="badge">v1.0</div>
+</div>
+
+<div class="container">
+  <div class="card">
+    <h2>📂 Select PowerPoint File</h2>
+
+    <div class="drop-zone" id="dropZone"
+         onclick="document.getElementById('fileInput').click()"
+         ondragover="onDragOver(event)"
+         ondragleave="onDragLeave(event)"
+         ondrop="onDrop(event)">
+      <div class="icon">📊</div>
+      <p>Drag & drop your PowerPoint file here, or <span>browse</span></p>
+      <p class="hint">Accepts .pptx, .ppt or any PowerPoint file • Must have voiceover in Notes pane</p>
+    </div>
+
+    <!-- Accept all files so user is not restricted by extension -->
+    <input type="file" id="fileInput" onchange="onFileSelected(this.files[0])">
+
+    <div class="file-info" id="fileInfo">
+      <span style="font-size:22px">📎</span>
+      <span class="name" id="fileName"></span>
+      <span class="size" id="fileSize"></span>
+      <span class="remove" onclick="removeFile()" title="Remove">×</span>
+    </div>
+
+    <button class="btn" id="convertBtn" onclick="convertToVideo()" disabled>🎬 Convert to Video</button>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">Processing...</div>
+    </div>
+
+    <div class="status" id="statusMsg"></div>
+
+    <div class="log-box" id="logBox">
+      <span class="log-info">Ready. Select a PowerPoint file to get started.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  let selectedFile = null;
+
+  // ── Drag & Drop ──────────────────────────────────────────────────────────
+  function onDragOver(e) {
+    e.preventDefault();
+    document.getElementById('dropZone').classList.add('drag-over');
+  }
+  function onDragLeave(e) {
+    document.getElementById('dropZone').classList.remove('drag-over');
+  }
+  function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('dropZone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) onFileSelected(file);
+  }
+
+  function onFileSelected(file) {
+    if (!file) return;
+    selectedFile = file;
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileSize').textContent = formatSize(file.size);
+    document.getElementById('fileInfo').classList.add('visible');
+    document.getElementById('convertBtn').disabled = false;
+    document.getElementById('statusMsg').textContent = '';
+    document.getElementById('statusMsg').className = 'status';
+    log('Selected: ' + file.name + ' (' + formatSize(file.size) + ')', 'info');
+  }
+
+  function removeFile() {
+    selectedFile = null;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('fileInfo').classList.remove('visible');
+    document.getElementById('convertBtn').disabled = true;
+    document.getElementById('statusMsg').textContent = '';
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  // ── Convert ──────────────────────────────────────────────────────────────
+  async function convertToVideo() {
+    if (!selectedFile) { alert('Please select a PowerPoint file.'); return; }
+
+    const btn    = document.getElementById('convertBtn');
+    const status = document.getElementById('statusMsg');
+
+    btn.disabled = true;
+    status.textContent = '';
+    status.className = 'status';
+    showProgress(true);
+    setProgress(5, 'Uploading file...');
+    log('Converting: ' + selectedFile.name, 'info');
+
+    let pct = 5;
+    const ticker = setInterval(() => {
+      if (pct < 80) {
+        pct += 2;
+        const msg = pct < 20 ? 'Uploading & converting slides to images...'
+                  : pct < 55 ? 'Generating TTS audio per slide...'
+                  : 'Building video with ffmpeg...';
+        setProgress(pct, msg);
+      }
+    }, 1500);
+
+    try {
+      const form = new FormData();
+      form.append('file', selectedFile);
+
+      const res = await fetch('/api/pptx-to-video', {
+        method: 'POST',
+        body: form
+      });
+
+      clearInterval(ticker);
+
+      if (!res.ok) {
+        const err = await res.json();
+        showProgress(false);
+        status.textContent = '❌ ' + err.message;
+        status.className = 'status err';
+        log('❌ ' + err.message, 'err');
+        btn.disabled = false;
+        return;
+      }
+
+      setProgress(95, 'Downloading video...');
+      const blob = await res.blob();
+
+      // Output filename = original name without extension + .mp4
+      const baseName = selectedFile.name.replace(/\.[^/.]+$/, '');
+      const outName  = baseName + '.mp4';
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = outName;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setProgress(100, '✅ Done!');
+      status.textContent = '✅ Downloaded: ' + outName;
+      status.className = 'status ok';
+      log('✅ Downloaded: ' + outName, 'ok');
+
+    } catch (e) {
+      clearInterval(ticker);
+      showProgress(false);
+      status.textContent = '❌ ' + e.message;
+      status.className = 'status err';
+      log('❌ ' + e.message, 'err');
+    } finally {
+      btn.disabled = false;
+      setTimeout(() => { showProgress(false); setProgress(0, ''); }, 4000);
+    }
+  }
+
+  function showProgress(v) { document.getElementById('progressWrap').style.display = v ? 'block' : 'none'; }
+  function setProgress(pct, label) {
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = label;
+  }
+  function log(msg, type = 'info') {
+    const box = document.getElementById('logBox');
+    const span = document.createElement('span');
+    span.className = 'log-' + type;
+    span.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+    box.appendChild(document.createElement('br'));
+    box.appendChild(span);
+    box.scrollTop = box.scrollHeight;
+  }
+</script>
+</body>
+</html>

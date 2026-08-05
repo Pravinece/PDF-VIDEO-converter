@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+jinja2
+python-multipart
+requests
+comtypes
+PyPDF2>=3.0.0
+python-pptx>=0.6.21
+python-docx>=1.0.0
+
