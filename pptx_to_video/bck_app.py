@@ -49,7 +49,7 @@ ANIMATION_BUFFER = 3.0   # extra seconds added per slide so animations play at n
 # ─── Clean notes text before TTS ─────────────────────────────────────────────
 def _clean_tts_text(text: str) -> str:
     # Strip label prefixes like "Voiceover:", "Narration:", "Voiceover/Narration:"
-    text = re.sub(r'^(voiceover|narration|voiceover\s*/\s*narration)\s*:\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'^(voiceover|narration|voiceover\s*/\s*narration|vo)\s*:\s*', '', text, flags=re.IGNORECASE)
 
     # Expand decimals with optional % before touching slashes
     def expand_decimal(m):

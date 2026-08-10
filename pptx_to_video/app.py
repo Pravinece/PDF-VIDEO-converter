@@ -152,6 +152,26 @@ PRONUNCIATION_MAP = {
     "principal": "prin-si-pal",
     "expiry": "ex-pie-ree",
     "considering": "cunsiddering",
+    "40,000": "forty thousand",
+    "75,000": "seventy five thousand",
+    "-1": "minus one",
+    "Griha Vatika": "Gree-ha  Vatikha",
+    "Matritva": "Maathritva",
+    "elderly": "el-der-lee",
+    "saraswati": "sara-swa-tee",
+    "Udaan": "oo-dahn",
+    "UDAAN": "oo-dahn",
+    "15,000":"fifteen thousand",
+    "20,000": "twenty thousand",
+    "25,000": "twenty five thousand",
+    "50,000": "fifty thousand",
+    "75,000": "seventy five thousand",
+    "3,00,000": "three lakh",
+    "Required" : "reck-wired",
+    "VAHAN": "vah-han",
+    "25,000 thousand": "twenty five thousand",
+    "EDULOANM": "EDU-LOAN-menu",
+    "Sahyog": "sha-yog",
     # Banking abbreviations
     "PNB": "P N B",
     "PMMY": "P M M Y",
@@ -179,7 +199,15 @@ PRONUNCIATION_MAP = {
     "HUF": "H U F",
     "SHLOT": "S H L O T",
     "ZOCAC": "Z O C A C",
-    "CHCAC": "C H C A C"
+    "CHCAC": "C H C A C",
+    "CA": "C A",
+    "ICWA": "I C W A",
+    "CFA": "C F A",
+    "IIMs": "I I M",
+    "IITs": "I I T",
+    "IISc": "I I S c",
+    "NIFT": "N I F T",
+    "NID": "N I D",
 }
 
 
@@ -194,7 +222,7 @@ def _apply_pronunciation_fixes(text: str) -> str:
 # ─── Clean notes text before TTS ─────────────────────────────────────────────
 def _clean_tts_text(text: str) -> str:
     # Strip label prefixes like "Voiceover:", "Narration:", "Voiceover/Narration:"
-    text = re.sub(r'^(voiceover|narration|voiceover\s*/\s*narration)\s*:\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'^(voiceover|narration|voiceover\s*/\s*narration|vo)\s*:\s*', '', text, flags=re.IGNORECASE)
 
     # Expand decimals with optional % before touching slashes
     def expand_decimal(m):
