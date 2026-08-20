@@ -139,6 +139,7 @@ PRONUNCIATION_MAP = {
     "Restructuring": "Reestrakchuring",
     "guarantees": "garantees",
     "Guarantees": "Garantees",
+    "Guarantee": "Garantee",
     "guarantee": "garantee",
     "ensuring": "inshuring",
     "approved": "approovd",
@@ -208,11 +209,67 @@ PRONUNCIATION_MAP = {
     "IISc": "I I S c",
     "NIFT": "N I F T",
     "NID": "N I D",
+    "BRE": "B R E",
+    "5.00 Cr": "five crore",
+    "1.00 Cr": "one crore",
+    "5.00": "five",
+    "1.00": "one",
+    "1.30:1": "one point three zero is to 1",
+    "1.20:1": "one point two zero is to 1",
+    "1cr": "one crore",
+    "A-1": "A one",
+    "e-BG": "e B G",
+    "UIN": "U I N",
+    "Rs.": "Rupees",
+    "Portfolio": "Port-folio", 
+    "i.e.": "that is",
+    "IB": "i b",
+    "PRIME": "prime",
+    "X" : "tenth",
+    "VIII" : "eighth",
+    "IX" : "ninth",
+    "XII" : "twelfth",
+    "XI" : "eleventh",
+    "LIC" : "L I C",
+    "PAN" : "pan",
+    "Voters": "voters",
+    "EKAA": "E K A A",
+    
 }
+
+
+def _indian_amount_to_words(amount_str: str) -> str:
+    """Convert Indian-format number string (e.g. '2,99,99,999') to English words."""
+    n = int(amount_str.replace(",", ""))
+    ones = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+            "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+            "seventeen", "eighteen", "nineteen"]
+    tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
+
+    def two_digits(n):
+        if n < 20: return ones[n]
+        return (tens[n // 10] + (" " + ones[n % 10] if n % 10 else "")).strip()
+
+    def three_digits(n):
+        if n >= 100:
+            return ones[n // 100] + " hundred" + (" " + two_digits(n % 100) if n % 100 else "")
+        return two_digits(n)
+
+    parts = []
+    crore    = n // 10_000_000; n %= 10_000_000
+    lakh     = n // 100_000;    n %= 100_000
+    thousand = n // 1000;       n %= 1000
+    if crore:    parts.append(two_digits(crore) + " crore")
+    if lakh:     parts.append(two_digits(lakh) + " lakh")
+    if thousand: parts.append(two_digits(thousand) + " thousand")
+    if n:        parts.append(three_digits(n))
+    return "Rupees " + " ".join(parts) + " only"
 
 
 def _apply_pronunciation_fixes(text: str) -> str:
     """Replace Hindi/Indian terms with phonetic equivalents for better TTS pronunciation."""
+    # Handle Rs. amounts FIRST before any other substitution
+    text = re.sub(r'Rs\.?\s*([\d,]+)(?:/-\.?)?', lambda m: _indian_amount_to_words(m.group(1)), text)
     for term, phonetic in PRONUNCIATION_MAP.items():
         pattern = re.compile(r'\b' + re.escape(term) + r'\b', re.IGNORECASE)
         text = pattern.sub(phonetic, text)
@@ -237,15 +294,15 @@ def _clean_tts_text(text: str) -> str:
             result += " percent"
         return result
 
+    # Apply pronunciation fixes FIRST (handles Rs. amounts before decimal expander runs)
+    text = _apply_pronunciation_fixes(text)
+
     text = re.sub(r'(?<![\d])(\d+)\.(\d+)(%?)', expand_decimal, text)
 
     # Replace slash between non-digits with " or "
     text = re.sub(r'(?<![\d])/(?![\d])', ' or ', text)
     # Replace slash between digits with " or "
     text = re.sub(r'(\d)/(\d)', lambda m: f"{m.group(1)} or {m.group(2)}", text)
-
-    # Apply pronunciation fixes for Hindi/Indian terms
-    text = _apply_pronunciation_fixes(text)
 
     return text.strip()
 
