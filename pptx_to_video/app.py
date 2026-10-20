@@ -21,6 +21,9 @@ import time
 import logging
 import asyncio
 import sys
+import ssl
+import truststore
+import httpx
 
 from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
@@ -41,9 +44,50 @@ if sys.platform == "win32":
 app = FastAPI(title="PPTX to Video", version="1.0")
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
-TTS_GRADIO_URL = "http://172.23.198.242:8001/"
+TTS_API_URL = "https://app.migotoai.com/llma/speech/tts"
 SLIDE_DURATION = 60      # fallback seconds per slide if no TTS duration available
-ANIMATION_BUFFER = 2.0   # extra seconds added per slide so animations play at natural speed
+ANIMATION_BUFFER = 3.0   # extra seconds added per slide so animations play at natural speed
+
+# Lead-in before narration: each slide is shown first, THEN its voiceover starts
+# after this delay (seconds). The slide always appears before the voice, and the
+# gap never exceeds this value. Applied identically to every slide.
+SLIDE_LEAD_IN = 1.0
+
+# Max characters per TTS request. Longer notes are split on sentence boundaries,
+# synthesized separately and joined back into one audio file.
+TTS_CHUNK_LIMIT = 1500
+
+# ─── Voice identity (single source of truth) ─────────────────────────────────
+# Azure TTS voice parameters — change here only, applied to every slide.
+VOICE_PROFILE = {
+    "voice_id": "el-GR-Athina:DragonHDLatestNeural",   # Azure Neural voice
+    "style":    "",                      # speaking style (leave blank for default)
+    "rate":     "0%",                    # speaking rate
+    "pitch":    "0Hz",                   # pitch adjustment
+}
+
+# Target integrated loudness (LUFS) applied to every slide's audio so the
+# perceived volume is uniform across the whole presentation.
+AUDIO_LOUDNESS_LUFS = -16.0
+AUDIO_LOUDNESS_TP   = -1.5    # true-peak ceiling (dBTP)
+AUDIO_LOUDNESS_LRA  = 11.0    # loudness range
+
+# ─── Entrance animation settings ─────────────────────────────────────────────
+# Applied via PowerPoint COM to shapes/paragraphs on each slide before export,
+# so python-pptx-generated decks (which have no animations) still animate in the video.
+ADD_ANIMATIONS = True    # set False to disable auto-applied entrance animations
+
+# PowerPoint MsoAnimEffect / trigger / level enum values (COM constants)
+_MSO_ANIM_EFFECT_FADE   = 10    # msoAnimEffectFade
+_MSO_ANIM_EFFECT_FLY_IN = 2     # msoAnimEffectFly
+_MSO_ANIM_TRIGGER_WITH_PREVIOUS  = 2  # msoAnimTriggerWithPrevious
+_MSO_ANIM_TRIGGER_AFTER_PREVIOUS = 3  # msoAnimTriggerAfterPrevious
+# Level controls how text within a placeholder is grouped into build steps.
+_MSO_ANIM_LEVEL_NONE          = 0     # msoAnimateLevelNone (animate shape as one unit)
+_MSO_ANIM_TEXT_BY_FIRST_LEVEL = 1     # msoAnimateTextByFirstLevel (one step per top-level bullet)
+
+ANIM_EFFECT = _MSO_ANIM_EFFECT_FADE   # default entrance effect for body text
+ANIM_STEP_DELAY = 0.4                 # seconds between successive animated items
 
 
 # ─── Pronunciation Dictionary ────────────────────────────────────────────────
@@ -221,7 +265,7 @@ PRONUNCIATION_MAP = {
     "e-BG": "e B G",
     "UIN": "U I N",
     "Rs.": "Rupees",
-    "Portfolio": "Port-folio", 
+    "Portfolio": "Port-folio",
     "i.e.": "that is",
     "IB": "i b",
     "PRIME": "prime",
@@ -234,7 +278,7 @@ PRONUNCIATION_MAP = {
     "PAN" : "pan",
     "Voters": "voters",
     "EKAA": "E K A A",
-    
+
 }
 
 
@@ -276,8 +320,31 @@ def _apply_pronunciation_fixes(text: str) -> str:
     return text
 
 
+# ─── Strip markdown / formatting symbols before TTS ──────────────────────────
+def _strip_formatting_symbols(text: str) -> str:
+    """Remove markdown and formatting symbols so the TTS never reads them aloud.
+
+    Handles the common markdown/formatting characters (asterisks, hashtags,
+    underscores, backticks, tildes, etc.) while PRESERVING punctuation and
+    characters that later cleaning steps rely on for natural speech:
+      - decimals / percentages (handled by expand_decimal)
+      - "/" between words or digits (handled → " or ")
+      - "Rs." amounts (handled → words)
+    So this runs FIRST, touching only pure formatting noise.
+    """
+    text = re.sub(r'[*_~`#]+', ' ', text)        # asterisks, underscores, tildes, backticks, hashtags
+    text = re.sub(r'^\s*[-+•]\s+', '', text, flags=re.MULTILINE)   # bullet markers at line start
+    text = re.sub(r'>{1,}', ' ', text)           # blockquote markers
+    text = re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', text)  # [label](url) → label
+    text = re.sub(r'[\[\]]', ' ', text)          # leftover square brackets
+    text = re.sub(r'[ \t]{2,}', ' ', text)
+    return text
+
+
 # ─── Clean notes text before TTS ─────────────────────────────────────────────
 def _clean_tts_text(text: str) -> str:
+    text = _strip_formatting_symbols(text)
+
     # Strip label prefixes like "Voiceover:", "Narration:", "Voiceover/Narration:"
     text = re.sub(r'^(voiceover|narration|voiceover\s*/\s*narration|vo)\s*:\s*', '', text, flags=re.IGNORECASE)
 
@@ -303,6 +370,10 @@ def _clean_tts_text(text: str) -> str:
     text = re.sub(r'(?<![\d])/(?![\d])', ' or ', text)
     # Replace slash between digits with " or "
     text = re.sub(r'(\d)/(\d)', lambda m: f"{m.group(1)} or {m.group(2)}", text)
+
+    # Characters that can break the server-side SSML
+    text = text.replace("&", " and ").replace("<", " ").replace(">", " ")
+    text = re.sub(r'\s+', ' ', text)
 
     return text.strip()
 
@@ -337,6 +408,58 @@ def _retry_com_call(func, max_attempts: int = 20, initial_delay: float = 5.0):
             raise
 
 
+def _apply_entrance_animations(slide) -> None:
+    """Add staggered entrance animations to the shapes on a single slide via COM.
+
+    - The first text shape (usually the title) fades in on its own.
+    - Each subsequent body/content placeholder animates in paragraph-by-paragraph
+      (one bullet at a time) using the Level parameter, timed After Previous.
+
+    Any per-shape failure is swallowed so a problematic shape never aborts the
+    whole export; the slide simply keeps fewer animations.
+    """
+    try:
+        sequence = slide.TimeLine.MainSequence
+    except Exception:
+        logger.warning("Slide has no animation timeline; skipping animations")
+        return
+
+    first_effect = True
+    for shape in slide.Shapes:
+        try:
+            has_text = bool(getattr(shape, "HasTextFrame", False)) and shape.TextFrame.HasText
+        except Exception:
+            has_text = False
+
+        if not has_text:
+            continue
+
+        try:
+            is_title = first_effect
+            level   = _MSO_ANIM_LEVEL_NONE if is_title else _MSO_ANIM_TEXT_BY_FIRST_LEVEL
+            effect_id = _MSO_ANIM_EFFECT_FADE if is_title else ANIM_EFFECT
+            trigger = (_MSO_ANIM_TRIGGER_WITH_PREVIOUS
+                       if first_effect else _MSO_ANIM_TRIGGER_AFTER_PREVIOUS)
+
+            effect = sequence.AddEffect(
+                Shape=shape,
+                effectId=effect_id,
+                Level=level,
+                trigger=trigger,
+            )
+
+            try:
+                effect.Timing.Duration = 0.5
+                effect.Timing.TriggerDelayTime = 0.0 if first_effect else ANIM_STEP_DELAY
+            except Exception:
+                pass
+
+            first_effect = False
+        except Exception:
+            logger.exception("Failed to add entrance animation to a shape; continuing")
+            continue
+
+
 def _pptx_to_video_impl(pptx_path: str, output_mp4: str, slide_durations: list[float] | None = None) -> str:
     # Kill any stuck PowerPoint processes from previous runs
     import subprocess as _sp
@@ -351,14 +474,20 @@ def _pptx_to_video_impl(pptx_path: str, output_mp4: str, slide_durations: list[f
         powerpoint.DisplayAlerts = False
         time.sleep(1)
 
-        presentation = _retry_com_call(lambda: powerpoint.Presentations.Open(pptx_path, ReadOnly=True, WithWindow=False))
+        # Open editable (ReadOnly=False) so entrance animations can be injected
+        # before export. Still open without a visible window.
+        presentation = _retry_com_call(lambda: powerpoint.Presentations.Open(pptx_path, ReadOnly=False, WithWindow=False))
         time.sleep(8)
 
         slides = _retry_com_call(lambda: list(enumerate(presentation.Slides)))
         for idx, slide in slides:
             base = slide_durations[idx] if slide_durations and idx < len(slide_durations) else SLIDE_DURATION
             slide.SlideShowTransition.AdvanceOnTime = True
-            slide.SlideShowTransition.AdvanceTime = base + ANIMATION_BUFFER
+            # Match the final segment length: lead-in (slide shown before voice)
+            # + spoken audio + animation buffer.
+            slide.SlideShowTransition.AdvanceTime = SLIDE_LEAD_IN + base + ANIMATION_BUFFER
+            if ADD_ANIMATIONS:
+                _retry_com_call(lambda s=slide: _apply_entrance_animations(s))
 
         _retry_com_call(lambda: presentation.CreateVideo(
             output_mp4,
@@ -394,16 +523,9 @@ def _pptx_to_video_impl(pptx_path: str, output_mp4: str, slide_durations: list[f
 
 
 def pptx_to_video_file(pptx_path: str, output_mp4: str, slide_durations: list[float] | None = None) -> str:
-    """Run PowerPoint COM export inside a dedicated STA thread.
-
-    Some Office COM servers require a Single-Threaded Apartment (STA). This
-    helper spawns a worker thread, initializes COM as STA (using pythoncom if
-    available, otherwise comtypes), runs the implementation and then
-    uninitializes COM before returning.
-    """
+    """Run PowerPoint COM export inside a dedicated STA thread."""
     import threading
 
-    # Prefer pythoncom if available because it exposes CoInitializeEx constants
     try:
         import pythoncom
         have_pythoncom = True
@@ -443,50 +565,140 @@ def pptx_to_video_file(pptx_path: str, output_mp4: str, slide_durations: list[fl
 # ─── TTS audio ───────────────────────────────────────────────────────────────
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-_tts_client = None
-
-def _get_tts_client():
-    """Reuse a single Gradio client connection."""
-    global _tts_client
-    if _tts_client is None:
-        from gradio_client import Client
-        _tts_client = Client(TTS_GRADIO_URL)
-    return _tts_client
+# Set env var TTS_VERIFY_SSL=0 only as a last-resort dev escape hatch.
+_TTS_VERIFY_SSL = os.getenv("TTS_VERIFY_SSL", "1") != "0"
 
 
-def generate_tts_audio(text: str, output_path: str) -> str:
-    import httpx
-    from gradio_client import Client
-    start = time.time()
-    # Each thread needs its own client for parallel calls
-    client = Client(TTS_GRADIO_URL)
-    result = client.predict(
-        text=text,
-        lang="English",
-        ns=32,
-        gs=2,
-        dn=True,
-        sp=0.9,
-        du=0,
-        pp=True,
-        po=True,
-        param_9="Female / 女",
-        param_10="Middle-aged / 中年",
-        param_11="Auto",
-        param_12="Auto",
-        param_13="Indian Accent / 印度口音",
-        param_14="Auto",
-        api_name="/_design_fn"
-    )
-    temp_audio_path = result[0] if isinstance(result, (tuple, list)) else result
-    if isinstance(temp_audio_path, str) and temp_audio_path.startswith("http"):
-        with httpx.Client(timeout=60) as hclient:
-            r = hclient.get(temp_audio_path)
+def _build_ssl_context():
+    """Use the OS (Windows) trust store so corporate proxy / internal CAs work."""
+    if not _TTS_VERIFY_SSL:
+        logger.warning("TTS SSL verification is DISABLED (dev only)")
+        return False
+    return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
+
+_TTS_HTTP_CLIENT = httpx.Client(timeout=120, verify=_build_ssl_context())
+
+
+def _split_text(text: str, limit: int = TTS_CHUNK_LIMIT) -> list[str]:
+    """Split on sentence boundaries so each TTS request stays under the limit."""
+    if len(text) <= limit:
+        return [text]
+    parts, cur = [], ""
+    for s in re.split(r'(?<=[.!?।])\s+', text):
+        # A single sentence longer than the limit: hard-split it
+        while len(s) > limit:
+            if cur:
+                parts.append(cur.strip())
+                cur = ""
+            parts.append(s[:limit])
+            s = s[limit:]
+        if len(cur) + len(s) + 1 > limit and cur:
+            parts.append(cur.strip())
+            cur = s
+        else:
+            cur = f"{cur} {s}".strip()
+    if cur:
+        parts.append(cur)
+    return parts
+
+
+def _tts_request(text: str, output_path: str, max_retries: int = 3) -> str:
+    """One TTS call (single chunk) with retry + detailed error logging."""
+    last_err = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            r = _TTS_HTTP_CLIENT.post(
+                TTS_API_URL,
+                headers={
+                    "accept": "*/*",
+                    "content-type": "application/x-www-form-urlencoded",
+                    "origin": "https://app.migotoai.com",
+                    "referer": "https://app.migotoai.com/llma/docs",
+                },
+                data={
+                    "message":  text,
+                    "voice_id": VOICE_PROFILE["voice_id"],
+                    "style":    VOICE_PROFILE["style"],
+                    "rate":     VOICE_PROFILE["rate"],
+                    "pitch":    VOICE_PROFILE["pitch"],
+                },
+            )
+            if r.status_code >= 500:
+                logger.error(
+                    "TTS %s (attempt %d/%d) for %s\nResponse: %s\nText sent (len=%d): %r",
+                    r.status_code, attempt, max_retries,
+                    os.path.basename(output_path), r.text[:500], len(text), text[:400],
+                )
+                last_err = httpx.HTTPStatusError(
+                    f"{r.status_code}: {r.text[:200]}", request=r.request, response=r
+                )
+                time.sleep(1.5 * attempt)
+                continue
+
             r.raise_for_status()
             with open(output_path, "wb") as f:
                 f.write(r.content)
+            return output_path
+
+        except (httpx.TimeoutException, httpx.TransportError) as e:
+            last_err = e
+            logger.warning("TTS network error (attempt %d/%d): %s", attempt, max_retries, e)
+            time.sleep(1.5 * attempt)
+
+    raise last_err
+
+
+def _concat_audio(parts: list[str], output_path: str) -> str:
+    """Join several audio files into one WAV using ffmpeg."""
+    import subprocess
+    from imageio_ffmpeg import get_ffmpeg_exe
+    ffmpeg = get_ffmpeg_exe()
+
+    list_file = output_path + ".concat.txt"
+    with open(list_file, "w", encoding="utf-8") as f:
+        for p in parts:
+            f.write("file '{}'\n".format(p.replace("\\", "/")))
+
+    proc = subprocess.run(
+        [ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", list_file,
+         "-c:a", "pcm_s16le", output_path],
+        capture_output=True, text=True,
+    )
+    try:
+        os.remove(list_file)
+    except OSError:
+        pass
+    if proc.returncode != 0:
+        raise RuntimeError(f"ffmpeg audio concat failed: {proc.stderr[-500:]}")
+    return output_path
+
+
+def generate_tts_audio(text: str, output_path: str, max_retries: int = 3) -> str:
+    """Generate TTS for one slide. Long text is chunked and re-joined."""
+    start = time.time()
+    chunks = _split_text(text)
+
+    if len(chunks) == 1:
+        _tts_request(chunks[0], output_path, max_retries)
     else:
-        shutil.copy(temp_audio_path, output_path)
+        logger.info("%s: text split into %d chunks", os.path.basename(output_path), len(chunks))
+        base, ext = os.path.splitext(output_path)
+        part_files = []
+        try:
+            for n, chunk in enumerate(chunks):
+                part_path = f"{base}_part{n:02d}{ext}"
+                _tts_request(chunk, part_path, max_retries)
+                part_files.append(part_path)
+            _concat_audio(part_files, output_path)
+        finally:
+            for p in part_files:
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
+
     logger.info(f"TTS took {time.time() - start:.2f}s → {os.path.basename(output_path)}")
     return output_path
 
@@ -501,7 +713,11 @@ def generate_all_tts_parallel(texts: list[str], audio_paths: list[str], max_work
         }
         for future in as_completed(future_to_idx):
             idx = future_to_idx[future]
-            results[idx] = future.result()
+            try:
+                results[idx] = future.result()
+            except Exception:
+                logger.error("TTS failed for slide index %d | text: %r", idx, texts[idx][:400])
+                raise
     return results
 
 
@@ -524,7 +740,6 @@ def get_audio_duration(audio_path: str) -> float:
         [ffmpeg, "-i", audio_path, "-f", "null", "-"],
         capture_output=True, text=True,
     )
-    # Parse duration from stderr output
     import re as _re
     match = _re.search(r'Duration:\s*(\d+):(\d+):(\d+\.\d+)', result.stderr)
     if match:
@@ -544,13 +759,25 @@ def build_video(pptx_video: str, audio_files: list[str], slide_durations: list[f
     start_time = 0.0
     for i, audio in enumerate(audio_files):
         tts_duration  = slide_durations[i]
-        total_duration = tts_duration + ANIMATION_BUFFER
+        # Total segment length = lead-in silence + spoken audio + trailing
+        # animation buffer, so the full voiceover plays and nothing is clipped.
+        total_duration = SLIDE_LEAD_IN + tts_duration + ANIMATION_BUFFER
         segment_path  = os.path.join(tmp_dir, f"seg_{i:03d}.mp4")
-        # Use total_duration for video so animations play fully; audio is padded with silence to match
+        # Audio pipeline per slide (identical for every slide):
+        #   1. loudnorm  → uniform perceived volume across the whole video
+        #   2. adelay    → prepend SLIDE_LEAD_IN of silence
+        #   3. apad      → append silence so video/animations finish cleanly
         padded_audio = os.path.join(tmp_dir, f"padded_{i:03d}.wav")
+        lead_in_ms = int(round(SLIDE_LEAD_IN * 1000))
+        loudnorm_filter = (
+            f"loudnorm=I={AUDIO_LOUDNESS_LUFS}:TP={AUDIO_LOUDNESS_TP}:LRA={AUDIO_LOUDNESS_LRA},"
+            f"adelay={lead_in_ms}:all=1,"
+            f"apad=pad_dur={ANIMATION_BUFFER}"
+        )
         subprocess.run(
             [ffmpeg, "-y", "-i", audio,
-             "-af", f"apad=pad_dur={ANIMATION_BUFFER}",
+             "-af", loudnorm_filter,
+             "-ar", "48000", "-ac", "2",
              "-t", str(total_duration), padded_audio],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
@@ -560,7 +787,8 @@ def build_video(pptx_video: str, audio_files: list[str], slide_durations: list[f
              "-i", padded_audio,
              "-map", "0:v", "-map", "1:a",
              "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
-             "-c:a", "aac", "-shortest", segment_path],
+             "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
+             "-shortest", segment_path],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         segment_files.append(segment_path)
@@ -601,12 +829,12 @@ async def pptx_to_video(file: UploadFile = File(...)):
         with open(pptx_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
-        # Read slide notes
         # Validate the file is a valid PPTX (ZIP with [Content_Types].xml)
         import zipfile
         if not zipfile.is_zipfile(pptx_path):
             return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid file. Please upload a valid .pptx file."})
 
+        # Read slide notes
         prs = Presentation(pptx_path)
         slide_notes = []
         for slide in prs.slides:
@@ -617,14 +845,17 @@ async def pptx_to_video(file: UploadFile = File(...)):
         total_slides = len(slide_notes)
         logger.info(f"Processing {total_slides} slides from: {original_name}")
 
-        # Step 1: notes → TTS audio in PARALLEL (biggest speed gain)
+        # Step 1: notes → TTS audio in PARALLEL
         audio_dir = os.path.join(tmp_dir, "audio")
         os.makedirs(audio_dir, exist_ok=True)
 
         tts_texts = []
         audio_paths_list = []
-        for i, vo in enumerate(slide_notes):
-            vo = _clean_tts_text(vo) if vo.strip() else f"Slide {i + 1}"
+        for i, raw in enumerate(slide_notes):
+            vo = _clean_tts_text(raw) if raw.strip() else f"Slide {i + 1}"
+            if not vo.strip():
+                vo = f"Slide {i + 1}"          # guard against empty text after cleaning
+            logger.info("Slide %d | raw_len=%d clean_len=%d\nCLEAN: %r", i, len(raw), len(vo), vo[:400])
             audio_path = os.path.join(audio_dir, f"slide_{i:03d}.wav")
             tts_texts.append(vo)
             audio_paths_list.append(audio_path)
@@ -673,6 +904,6 @@ if __name__ == "__main__":
     import uvicorn
     print("=" * 50)
     print("  PPTX to Video — http://localhost:8100")
-    print(f"  TTS: {TTS_GRADIO_URL}")
+    print(f"  TTS: {TTS_API_URL}")
     print("=" * 50)
     uvicorn.run(app, host="0.0.0.0", port=8100)

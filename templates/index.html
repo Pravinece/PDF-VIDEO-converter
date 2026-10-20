@@ -1,481 +1,892 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PPT Generator</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: "Segoe UI", Tahoma, sans-serif; background: #f0f2f5; min-height: 100vh; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PPT Generator</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        background: #f0f2f5;
+        min-height: 100vh;
+      }
 
-    .header {
-      background: linear-gradient(135deg, #9e173b, #c0294e);
-      color: #fff; padding: 20px 40px;
-      display: flex; align-items: center; justify-content: space-between;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .header h1 { font-size: 22px; }
-    .header .subtitle { font-size: 12px; color: #ffc000; margin-top: 4px; }
-    .header .badge { background: #ffc000; color: #9e173b; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+      .header {
+        background: linear-gradient(135deg, #9e173b, #c0294e);
+        color: #fff;
+        padding: 20px 40px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      .header h1 {
+        font-size: 22px;
+      }
+      .header .subtitle {
+        font-size: 12px;
+        color: #ffc000;
+        margin-top: 4px;
+      }
+      .header .badge {
+        background: #ffc000;
+        color: #9e173b;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+      }
 
-    .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+      .container {
+        max-width: 1100px;
+        margin: 30px auto;
+        padding: 0 20px;
+      }
 
-    .card {
-      background: #fff; border-radius: 12px; padding: 24px;
-      margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      border-left: 4px solid #9e173b;
-    }
-    .card h2 { font-size: 16px; color: #9e173b; margin-bottom: 16px; }
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        border-left: 4px solid #9e173b;
+      }
+      .card h2 {
+        font-size: 16px;
+        color: #9e173b;
+        margin-bottom: 16px;
+      }
 
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
 
-    .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-group label { font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; }
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      padding: 10px 14px; border: 1.5px solid #ddd;
-      border-radius: 8px; font-size: 14px; font-family: inherit;
-    }
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      outline: none; border-color: #9e173b;
-      box-shadow: 0 0 0 3px rgba(158,23,59,0.1);
-    }
-    .form-group textarea { resize: vertical; min-height: 120px; font-size: 12px; }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .form-group label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #555;
+        text-transform: uppercase;
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        padding: 10px 14px;
+        border: 1.5px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: #9e173b;
+        box-shadow: 0 0 0 3px rgba(158, 23, 59, 0.1);
+      }
+      .form-group textarea {
+        resize: vertical;
+        min-height: 120px;
+        font-size: 12px;
+      }
 
-    .upload-area {
-      border: 2px dashed #ddd; border-radius: 10px; padding: 32px;
-      text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;
-    }
-    .upload-area:hover { border-color: #9e173b; background: #fff5f7; }
-    .upload-area.drag-over { border-color: #9e173b; background: #fff0f3; }
-    .upload-area .icon { font-size: 36px; margin-bottom: 8px; }
-    .upload-area p { font-size: 14px; color: #777; }
-    .upload-area span { color: #9e173b; font-weight: 600; cursor: pointer; }
-    #fileInput { display: none; }
+      .upload-area {
+        border: 2px dashed #ddd;
+        border-radius: 10px;
+        padding: 32px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #fafafa;
+      }
+      .upload-area:hover {
+        border-color: #9e173b;
+        background: #fff5f7;
+      }
+      .upload-area.drag-over {
+        border-color: #9e173b;
+        background: #fff0f3;
+      }
+      .upload-area .icon {
+        font-size: 36px;
+        margin-bottom: 8px;
+      }
+      .upload-area p {
+        font-size: 14px;
+        color: #777;
+      }
+      .upload-area span {
+        color: #9e173b;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #fileInput {
+        display: none;
+      }
 
-    .file-info {
-      display: none; align-items: center; gap: 10px;
-      background: #f5f5f5; border-radius: 8px; padding: 10px 14px; margin-top: 12px;
-    }
-    .file-info.visible { display: flex; }
-    .file-info .name { font-size: 13px; font-weight: 600; color: #333; flex: 1; }
-    .file-info .pages { font-size: 12px; color: #888; }
-    .file-info .remove { color: #e53935; cursor: pointer; font-size: 18px; font-weight: bold; }
+      .file-info {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        background: #f5f5f5;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-top: 12px;
+      }
+      .file-info.visible {
+        display: flex;
+      }
+      .file-info .name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #333;
+        flex: 1;
+      }
+      .file-info .pages {
+        font-size: 12px;
+        color: #888;
+      }
+      .file-info .remove {
+        color: #e53935;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+      }
 
-    .btn {
-      padding: 10px 22px; border: none; border-radius: 8px; font-size: 14px;
-      font-weight: 600; cursor: pointer; transition: all 0.2s;
-    }
-    .btn-primary { background: #9e173b; color: #fff; }
-    .btn-primary:hover { background: #7d1230; }
-    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
-    .btn-secondary { background: #f0f0f0; color: #333; }
-    .btn-secondary:hover { background: #e0e0e0; }
-    .btn-sm { padding: 6px 14px; font-size: 12px; }
-    .btn-gold { background: #ffc000; color: #9e173b; }
-    .btn-gold:hover { background: #e5ac00; }
+      .btn {
+        padding: 10px 22px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-primary {
+        background: #9e173b;
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #7d1230;
+      }
+      .btn-primary:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .btn-secondary {
+        background: #f0f0f0;
+        color: #333;
+      }
+      .btn-secondary:hover {
+        background: #e0e0e0;
+      }
+      .btn-sm {
+        padding: 6px 14px;
+        font-size: 12px;
+      }
+      .btn-gold {
+        background: #ffc000;
+        color: #9e173b;
+      }
+      .btn-gold:hover {
+        background: #e5ac00;
+      }
 
-    .connection-row { display: flex; gap: 10px; align-items: flex-end; }
-    .connection-row .form-group { flex: 1; }
-    .conn-status { font-size: 12px; margin-top: 8px; }
-    .conn-status.ok { color: #2e7d32; }
-    .conn-status.err { color: #c62828; }
+      .connection-row {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+      }
+      .connection-row .form-group {
+        flex: 1;
+      }
+      .conn-status {
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      .conn-status.ok {
+        color: #2e7d32;
+      }
+      .conn-status.err {
+        color: #c62828;
+      }
 
-    .topic-list { max-height: 320px; overflow-y: auto; margin-top: 10px; }
-    .topic-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 14px; border-radius: 8px; cursor: pointer;
-      border: 1.5px solid #eee; margin-bottom: 8px; transition: all 0.15s;
-    }
-    .topic-item:hover { border-color: #9e173b; background: #fff5f7; }
-    .topic-item.selected { border-color: #9e173b; background: #fff0f3; }
-    .topic-item .num {
-      background: #9e173b; color: #fff; border-radius: 50%;
-      width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700; flex-shrink: 0;
-    }
-    .topic-item .title { font-size: 13px; color: #333; flex: 1; }
-    .topic-item .actions { display: flex; gap: 6px; }
+      .topic-list {
+        max-height: 320px;
+        overflow-y: auto;
+        margin-top: 10px;
+      }
+      .topic-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        border: 1.5px solid #eee;
+        margin-bottom: 8px;
+        transition: all 0.15s;
+      }
+      .topic-item:hover {
+        border-color: #9e173b;
+        background: #fff5f7;
+      }
+      .topic-item.selected {
+        border-color: #9e173b;
+        background: #fff0f3;
+      }
+      .topic-item .num {
+        background: #9e173b;
+        color: #fff;
+        border-radius: 50%;
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .topic-item .title {
+        font-size: 13px;
+        color: #333;
+        flex: 1;
+      }
+      .topic-item .actions {
+        display: flex;
+        gap: 6px;
+      }
 
-    .log-box {
-      background: #1a1a2e; border-radius: 8px; padding: 14px;
-      min-height: 120px; max-height: 240px; overflow-y: auto;
-      font-family: monospace; font-size: 12px; color: #e0e0e0;
-    }
-    .log-box .log-ok { color: #66bb6a; }
-    .log-box .log-err { color: #ef5350; }
-    .log-box .log-info { color: #42a5f5; }
+      .log-box {
+        background: #1a1a2e;
+        border-radius: 8px;
+        padding: 14px;
+        min-height: 120px;
+        max-height: 240px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 12px;
+        color: #e0e0e0;
+      }
+      .log-box .log-ok {
+        color: #66bb6a;
+      }
+      .log-box .log-err {
+        color: #ef5350;
+      }
+      .log-box .log-info {
+        color: #42a5f5;
+      }
 
-    .progress-wrap { display: none; margin-top: 12px; }
-    .progress-wrap.visible { display: block; }
-    .progress-bar { height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
-    .progress-fill { height: 100%; background: #9e173b; width: 0%; transition: width 0.3s; border-radius: 4px; }
-    .progress-label { font-size: 12px; color: #777; margin-top: 4px; }
+      .progress-wrap {
+        display: none;
+        margin-top: 12px;
+      }
+      .progress-wrap.visible {
+        display: block;
+      }
+      .progress-bar {
+        height: 8px;
+        background: #eee;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: #9e173b;
+        width: 0%;
+        transition: width 0.3s;
+        border-radius: 4px;
+      }
+      .progress-label {
+        font-size: 12px;
+        color: #777;
+        margin-top: 4px;
+      }
 
-    .select-all-row { display: flex; gap: 8px; margin-bottom: 10px; }
+      .select-all-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
 
-    .empty-state { text-align: center; padding: 30px; color: #aaa; font-size: 14px; }
+      .empty-state {
+        text-align: center;
+        padding: 30px;
+        color: #aaa;
+        font-size: 14px;
+      }
 
-    .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
-    .tab-btn { padding: 8px 18px; border: none; background: #f0f0f0; border-radius: 8px; font-size: 13px; cursor: pointer; color: #555; }
-    .tab-btn.active { background: #9e173b; color: #fff; }
+      .tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 16px;
+      }
+      .tab-btn {
+        padding: 8px 18px;
+        border: none;
+        background: #f0f0f0;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        color: #555;
+      }
+      .tab-btn.active {
+        background: #9e173b;
+        color: #fff;
+      }
 
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
 
-    .model-tag {
-      display: inline-block; padding: 2px 10px; border-radius: 12px;
-      background: #fff0f3; color: #9e173b; font-size: 11px; margin: 2px;
-      cursor: pointer; border: 1px solid #f5c0cc;
-    }
-    .model-tag:hover { background: #9e173b; color: #fff; }
-  </style>
-</head>
-<body>
+      .model-tag {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        background: #fff0f3;
+        color: #9e173b;
+        font-size: 11px;
+        margin: 2px;
+        cursor: pointer;
+        border: 1px solid #f5c0cc;
+      }
+      .model-tag:hover {
+        background: #9e173b;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div>
+        <h1>📊 PPT Generator</h1>
+        <div class="subtitle">AI-powered presentation builder using Ollama LLM</div>
+      </div>
+      <div class="badge">v2.0</div>
+    </div>
 
-<div class="header">
-  <div>
-    <h1>📊 PPT Generator</h1>
-    <div class="subtitle">AI-powered presentation builder using Ollama LLM</div>
-  </div>
-  <div class="badge">v2.0</div>
-</div>
-
-<div class="container">
-
-  <!-- Connection Settings -->
-  <div class="card">
-    <h2>⚙️ Connection Settings</h2>
-    <div class="grid-2">
-      <div class="form-group">
-        <label>Ollama URL</label>
-        <div class="connection-row">
-          <div class="form-group" style="flex:1;gap:0">
-            <input type="text" id="ollamaUrl" value="http://172.23.198.77:11434" placeholder="http://...">
+    <div class="container">
+      <!-- Connection Settings -->
+      <div class="card">
+        <h2>⚙️ Connection Settings</h2>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Ollama URL</label>
+            <div class="connection-row">
+              <div class="form-group" style="flex: 1; gap: 0">
+                <input type="text" id="ollamaUrl" value="http://172.23.198.77:11434" placeholder="http://..." />
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="testConnection()">Test</button>
+            </div>
+            <div class="conn-status" id="connStatus"></div>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="testConnection()">Test</button>
+          <div class="form-group">
+            <label>Model</label>
+            <input type="text" id="modelName" value="deepseek-r1:14b" placeholder="model name" />
+            <div id="modelTags" style="margin-top: 6px"></div>
+          </div>
         </div>
-        <div class="conn-status" id="connStatus"></div>
-      </div>
-      <div class="form-group">
-        <label>Model</label>
-        <input type="text" id="modelName" value="deepseek-r1:14b" placeholder="model name">
-        <div id="modelTags" style="margin-top:6px"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Upload -->
-  <div class="card">
-    <h2>📁 Upload Document</h2>
-    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()"
-         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-      <div class="icon">📄</div>
-      <p>Drag & drop your PDF or DOCX here, or <span>browse</span></p>
-      <p style="font-size:11px;margin-top:6px;color:#bbb">Supported: .pdf, .docx</p>
-    </div>
-    <input type="file" id="fileInput" accept=".pdf,.docx" onchange="uploadFile(this.files[0])">
-    <div class="file-info" id="fileInfo">
-      <span style="font-size:20px">📎</span>
-      <span class="name" id="fileName"></span>
-      <span class="pages" id="filePages"></span>
-      <span class="remove" onclick="removeFile()" title="Remove">×</span>
-    </div>
-
-    <!-- Previously uploaded files -->
-    <div style="margin-top:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <label style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase">Or select an uploaded file</label>
-        <button class="btn btn-secondary btn-sm" onclick="loadUploads()">↻ Refresh</button>
-      </div>
-      <select id="uploadedFiles" class="form-group" style="padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;width:100%" onchange="onSelectUploadedFile()">
-        <option value="">-- select file --</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- PPT to Video -->
-  <div class="card">
-    <h2>🎬 PPT → Video (Upload PPTX with Notes)</h2>
-    <div class="grid-2">
-      <div class="form-group">
-        <label>Upload PPTX</label>
-        <div class="upload-area" id="ptvUploadArea" onclick="document.getElementById('ptvFileInput').click()"
-             ondragover="onDragOverPtv(event)" ondragleave="onDragLeavePtv(event)" ondrop="onDropPtv(event)"
-             style="padding:20px">
-          <div class="icon" style="font-size:28px">📊</div>
-          <p>Drag & drop PPTX or <span>browse</span></p>
-          <p style="font-size:11px;margin-top:4px;color:#bbb">Must have voiceover in Notes pane</p>
-        </div>
-        <input type="file" id="ptvFileInput" accept=".pptx" onchange="uploadPtvFile(this.files[0])" style="display:none">
-        <div class="file-info" id="ptvFileInfo">
-          <span style="font-size:20px">📎</span>
-          <span class="name" id="ptvFileName"></span>
-          <span class="remove" onclick="removePtvFile()" title="Remove">×</span>
+        <div class="grid-2" style="margin-top: 16px">
+          <div class="form-group">
+            <label>Output Language</label>
+            <select id="outputLanguage">
+              <option value="english" selected>English</option>
+              <option value="hindi">हिंदी (Hindi)</option>
+              <option value="tamil">தமிழ் (Tamil)</option>
+              <option value="telugu">తెలుగు (Telugu)</option>
+              <option value="malayalam">മലയാളം (Malayalam)</option>
+            </select>
+            <div style="font-size: 11px; color: #aaa; margin-top: 4px">
+              Slide headings, bullet points &amp; voiceover notes will be generated in this language.
+            </div>
+          </div>
+          <div></div>
         </div>
       </div>
-      <div class="form-group">
-        <label>Or select an uploaded PPTX</label>
-        <select id="ptvSelectFile" style="padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;width:100%">
-          <option value="">-- select PPTX --</option>
-        </select>
-        <div class="form-group" style="margin-top:12px">
-          <label>TTS URL (optional)</label>
-          <input type="text" id="ptvTtsUrl" placeholder="http://172.23.198.77:8001/tts (leave blank for default)">
+
+      <!-- Upload -->
+      <div class="card">
+        <h2>📁 Upload Document</h2>
+        <div
+          class="upload-area"
+          id="uploadArea"
+          onclick="document.getElementById('fileInput').click()"
+          ondragover="onDragOver(event)"
+          ondragleave="onDragLeave(event)"
+          ondrop="onDrop(event)"
+        >
+          <div class="icon">📄</div>
+          <p>Drag & drop your PDF or DOCX here, or <span>browse</span></p>
+          <p style="font-size: 11px; margin-top: 6px; color: #bbb">Supported: .pdf, .docx</p>
+        </div>
+        <input type="file" id="fileInput" accept=".pdf,.docx" onchange="uploadFile(this.files[0])" />
+        <div class="file-info" id="fileInfo">
+          <span style="font-size: 20px">📎</span>
+          <span class="name" id="fileName"></span>
+          <span class="pages" id="filePages"></span>
+          <span class="remove" onclick="removeFile()" title="Remove">×</span>
+        </div>
+
+        <!-- Previously uploaded files -->
+        <div style="margin-top: 16px">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+            <label style="font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase"
+              >Or select an uploaded file</label
+            >
+            <button class="btn btn-secondary btn-sm" onclick="loadUploads()">↻ Refresh</button>
+          </div>
+          <select
+            id="uploadedFiles"
+            class="form-group"
+            style="padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 14px; width: 100%"
+            onchange="onSelectUploadedFile()"
+          >
+            <option value="">-- select file --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- DOCX + Images → PPT -->
+      <div class="card">
+        <h2>🖼️ DOCX + Images → Single PPT</h2>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Upload DOCX</label>
+            <div
+              class="upload-area"
+              id="diDocxArea"
+              onclick="document.getElementById('diDocxInput').click()"
+              ondragover="
+                event.preventDefault();
+                this.classList.add('drag-over');
+              "
+              ondragleave="this.classList.remove('drag-over')"
+              ondrop="diOnDropDocx(event)"
+              style="padding: 20px"
+            >
+              <div class="icon" style="font-size: 28px">📄</div>
+              <p>Drag & drop DOCX or <span>browse</span></p>
+            </div>
+            <input
+              type="file"
+              id="diDocxInput"
+              accept=".docx"
+              style="display: none"
+              onchange="diSetDocx(this.files[0])"
+            />
+            <div class="file-info" id="diDocxInfo">
+              <span style="font-size: 20px">📎</span>
+              <span class="name" id="diDocxName"></span>
+              <span class="remove" onclick="diClearDocx()">×</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Upload Images (one or more)</label>
+            <div
+              class="upload-area"
+              id="diImgArea"
+              onclick="document.getElementById('diImgInput').click()"
+              ondragover="
+                event.preventDefault();
+                this.classList.add('drag-over');
+              "
+              ondragleave="this.classList.remove('drag-over')"
+              ondrop="diOnDropImgs(event)"
+              style="padding: 20px"
+            >
+              <div class="icon" style="font-size: 28px">🖼️</div>
+              <p>Drag & drop images or <span>browse</span></p>
+              <p style="font-size: 11px; color: #bbb; margin-top: 4px">PNG, JPG, JPEG, GIF, BMP, WEBP</p>
+            </div>
+            <input
+              type="file"
+              id="diImgInput"
+              accept="image/*"
+              multiple
+              style="display: none"
+              onchange="diAddImages(this.files)"
+            />
+            <div id="diImgList" style="margin-top: 8px; font-size: 12px; color: #555"></div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top: 12px">
+          <div class="form-group">
+            <label
+              >Scheme / Topic Name
+              <span style="font-weight: 400; color: #aaa">(optional — leave blank to use full doc)</span></label
+            >
+            <input type="text" id="diSchemeName" placeholder="e.g. MSME VISHESH or leave blank" />
+          </div>
+          <div class="form-group">
+            <label>Ollama URL</label>
+            <input type="text" id="diOllamaUrl" value="http://172.23.198.77:11434" />
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top: 12px">
+          <div class="form-group">
+            <label>Number of Content Slides</label>
+            <input type="number" id="diNumSlides" value="5" min="1" max="30" />
+          </div>
+          <div class="form-group">
+            <label>Images per Slide</label>
+            <input type="number" id="diImgsPerSlide" value="5" min="1" max="9" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 12px">
+          <label
+            >Logo
+            <span style="font-weight: 400; color: #aaa">(optional — shown on the first &amp; last slides)</span></label
+          >
+          <input type="file" id="diLogoInput" accept="image/*" />
+          <div id="diLogoName" style="margin-top: 6px; font-size: 12px; color: #555"></div>
+        </div>
+        <div style="margin-top: 14px; display: flex; gap: 10px; align-items: center">
+          <button class="btn btn-primary" id="diBtn" onclick="generateDocxImagePPT()">
+            ⚡ Generate PPT with Images
+          </button>
+          <span id="diStatus" style="font-size: 13px; color: #888"></span>
+        </div>
+        <div id="diProgress" style="display: none; margin-top: 12px">
+          <div class="progress-bar"><div class="progress-fill" id="diFill"></div></div>
+          <div class="progress-label" id="diLabel">Processing...</div>
+        </div>
+      </div>
+
+      <!-- PPT to Video -->
+      <div class="card">
+        <h2>🎬 PPT → Video (Upload PPTX with Notes)</h2>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Upload PPTX</label>
+            <div
+              class="upload-area"
+              id="ptvUploadArea"
+              onclick="document.getElementById('ptvFileInput').click()"
+              ondragover="onDragOverPtv(event)"
+              ondragleave="onDragLeavePtv(event)"
+              ondrop="onDropPtv(event)"
+              style="padding: 20px"
+            >
+              <div class="icon" style="font-size: 28px">📊</div>
+              <p>Drag & drop PPTX or <span>browse</span></p>
+              <p style="font-size: 11px; margin-top: 4px; color: #bbb">Must have voiceover in Notes pane</p>
+            </div>
+            <input
+              type="file"
+              id="ptvFileInput"
+              accept=".pptx"
+              onchange="uploadPtvFile(this.files[0])"
+              style="display: none"
+            />
+            <div class="file-info" id="ptvFileInfo">
+              <span style="font-size: 20px">📎</span>
+              <span class="name" id="ptvFileName"></span>
+              <span class="remove" onclick="removePtvFile()" title="Remove">×</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Or select an uploaded PPTX</label>
+            <select
+              id="ptvSelectFile"
+              style="padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 14px; width: 100%"
+            >
+              <option value="">-- select PPTX --</option>
+            </select>
+            <div class="form-group" style="margin-top: 12px">
+              <label>TTS URL (optional)</label>
+              <input type="text" id="ptvTtsUrl" placeholder="http://172.23.198.77:8001/tts (leave blank for default)" />
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 14px; display: flex; gap: 10px; align-items: center">
+          <button class="btn btn-gold" id="ptvBtn" onclick="generatePtvVideo()">🎬 Convert PPTX → Video</button>
+          <span id="ptvStatus" style="font-size: 13px; color: #888"></span>
+        </div>
+        <div id="ptvProgress" style="display: none; margin-top: 12px">
+          <div class="progress-bar"><div class="progress-fill" id="ptvFill"></div></div>
+          <div class="progress-label" id="ptvLabel">Processing...</div>
+        </div>
+      </div>
+
+      <!-- Scheme to PPT (Single API) -->
+      <div class="card">
+        <h2>🚀 Generate PPT by Scheme Name</h2>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Uploaded File</label>
+            <select
+              id="stp-file"
+              style="padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 14px; width: 100%"
+            >
+              <option value="">-- select uploaded file --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Scheme Name</label>
+            <input type="text" id="stp-scheme" placeholder="e.g. MSME VISHESH" />
+          </div>
+        </div>
+        <div style="margin-top: 14px; display: flex; gap: 10px; align-items: center">
+          <button class="btn btn-primary" id="stp-btn" onclick="generateSchemePPT()">
+            ⚡ Extract → JSON → Download PPT
+          </button>
+          <span id="stp-status" style="font-size: 13px; color: #888"></span>
+        </div>
+        <div id="stp-progress" style="display: none; margin-top: 12px">
+          <div class="progress-bar"><div class="progress-fill" id="stp-fill"></div></div>
+          <div class="progress-label" id="stp-label">Processing...</div>
+        </div>
+      </div>
+
+      <!-- Topics -->
+      <div class="card" id="topicsCard" style="display: none">
+        <h2>📋 Topics / Schemes</h2>
+        <div class="select-all-row">
+          <button class="btn btn-secondary btn-sm" onclick="selectAll()">Select All</button>
+          <button class="btn btn-secondary btn-sm" onclick="deselectAll()">Deselect All</button>
+          <span style="font-size: 12px; color: #888; margin-left: auto" id="selectedCount">0 selected</span>
+        </div>
+        <div class="topic-list" id="topicList">
+          <div class="empty-state">No topics loaded yet.</div>
+        </div>
+        <div style="margin-top: 14px; display: flex; gap: 10px">
+          <button class="btn btn-primary" onclick="generateSelected()">🎯 Generate PPT for Selected</button>
+          <button class="btn btn-gold" onclick="generateVideoSelected()">🎬 Generate Video for Selected</button>
+        </div>
+      </div>
+
+      <!-- System Prompt -->
+      <div class="card">
+        <h2>🧠 System Prompt</h2>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchTab('default')">Default</button>
+          <button class="tab-btn" onclick="switchTab('custom')">Custom</button>
+        </div>
+        <div class="tab-content active" id="tab-default">
+          <p style="font-size: 13px; color: #777; line-height: 1.6">
+            Using the built-in system prompt optimized for structured corporate training presentations. It enforces 8
+            bullets per slide, voiceover rules, and complete content preservation.
+          </p>
+        </div>
+        <div class="tab-content" id="tab-custom">
+          <div class="form-group">
+            <label>Custom System Prompt</label>
+            <textarea
+              id="systemPrompt"
+              placeholder="Enter custom system prompt or leave empty to use default..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress & Log -->
+      <div class="card">
+        <h2>📝 Activity Log</h2>
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="progress-label" id="progressLabel">Processing...</div>
+        </div>
+        <div class="log-box" id="logBox">
+          <span class="log-info">Ready. Upload a document and select topics to get started.</span>
         </div>
       </div>
     </div>
-    <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
-      <button class="btn btn-gold" id="ptvBtn" onclick="generatePtvVideo()">🎬 Convert PPTX → Video</button>
-      <span id="ptvStatus" style="font-size:13px;color:#888"></span>
-    </div>
-    <div id="ptvProgress" style="display:none;margin-top:12px">
-      <div class="progress-bar"><div class="progress-fill" id="ptvFill"></div></div>
-      <div class="progress-label" id="ptvLabel">Processing...</div>
-    </div>
-  </div>
 
-  <!-- Scheme to PPT (Single API) -->
-  <div class="card">
-    <h2>🚀 Generate PPT by Scheme Name</h2>
-    <div class="grid-2">
-      <div class="form-group">
-        <label>Uploaded File</label>
-        <select id="stp-file" style="padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;width:100%">
-          <option value="">-- select uploaded file --</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Scheme Name</label>
-        <input type="text" id="stp-scheme" placeholder="e.g. MSME VISHESH" />
-      </div>
-    </div>
-    <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
-      <button class="btn btn-primary" id="stp-btn" onclick="generateSchemePPT()">⚡ Extract → JSON → Download PPT</button>
-      <span id="stp-status" style="font-size:13px;color:#888"></span>
-    </div>
-    <div id="stp-progress" style="display:none;margin-top:12px">
-      <div class="progress-bar"><div class="progress-fill" id="stp-fill"></div></div>
-      <div class="progress-label" id="stp-label">Processing...</div>
-    </div>
-  </div>
+    <script>
+      let uploadedFilename = null;
+      let topics = [];
+      let selectedTopics = new Set();
+      let isProcessing = false;
 
-  <!-- Topics -->
-  <div class="card" id="topicsCard" style="display:none">
-    <h2>📋 Topics / Schemes</h2>
-    <div class="select-all-row">
-      <button class="btn btn-secondary btn-sm" onclick="selectAll()">Select All</button>
-      <button class="btn btn-secondary btn-sm" onclick="deselectAll()">Deselect All</button>
-      <span style="font-size:12px;color:#888;margin-left:auto" id="selectedCount">0 selected</span>
-    </div>
-    <div class="topic-list" id="topicList">
-      <div class="empty-state">No topics loaded yet.</div>
-    </div>
-    <div style="margin-top:14px;display:flex;gap:10px">
-      <button class="btn btn-primary" onclick="generateSelected()">🎯 Generate PPT for Selected</button>
-      <button class="btn btn-gold" onclick="generateVideoSelected()">🎬 Generate Video for Selected</button>
-    </div>
-  </div>
-
-  <!-- System Prompt -->
-  <div class="card">
-    <h2>🧠 System Prompt</h2>
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('default')">Default</button>
-      <button class="tab-btn" onclick="switchTab('custom')">Custom</button>
-    </div>
-    <div class="tab-content active" id="tab-default">
-      <p style="font-size:13px;color:#777;line-height:1.6">Using the built-in system prompt optimized for structured corporate training presentations. It enforces 8 bullets per slide, voiceover rules, and complete content preservation.</p>
-    </div>
-    <div class="tab-content" id="tab-custom">
-      <div class="form-group">
-        <label>Custom System Prompt</label>
-        <textarea id="systemPrompt" placeholder="Enter custom system prompt or leave empty to use default..."></textarea>
-      </div>
-    </div>
-  </div>
-
-  <!-- Progress & Log -->
-  <div class="card">
-    <h2>📝 Activity Log</h2>
-    <div class="progress-wrap" id="progressWrap">
-      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-      <div class="progress-label" id="progressLabel">Processing...</div>
-    </div>
-    <div class="log-box" id="logBox">
-      <span class="log-info">Ready. Upload a document and select topics to get started.</span>
-    </div>
-  </div>
-
-</div>
-
-<script>
-  let uploadedFilename = null;
-  let topics = [];
-  let selectedTopics = new Set();
-  let isProcessing = false;
-
-  // ── Connection ──────────────────────────────────────────────────────────────
-  async function testConnection() {
-    const url = document.getElementById('ollamaUrl').value.trim();
-    const status = document.getElementById('connStatus');
-    const tags = document.getElementById('modelTags');
-    status.textContent = 'Testing...';
-    status.className = 'conn-status';
-    try {
-      const res = await fetch('/api/test-connection', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ollama_url: url })
-      });
-      const data = await res.json();
-      if (data.status === 'ok') {
-        status.textContent = `✅ Connected — ${data.models.length} model(s) available`;
-        status.className = 'conn-status ok';
-        tags.innerHTML = data.models.map(m =>
-          `<span class="model-tag" onclick="document.getElementById('modelName').value='${m}'">${m}</span>`
-        ).join('');
-        log(`Connected to Ollama. Models: ${data.models.join(', ')}`, 'ok');
-      } else {
-        status.textContent = `❌ ${data.message}`;
-        status.className = 'conn-status err';
+      // ── Connection ──────────────────────────────────────────────────────────────
+      async function testConnection() {
+        const url = document.getElementById("ollamaUrl").value.trim();
+        const status = document.getElementById("connStatus");
+        const tags = document.getElementById("modelTags");
+        status.textContent = "Testing...";
+        status.className = "conn-status";
+        try {
+          const res = await fetch("/api/test-connection", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ollama_url: url }),
+          });
+          const data = await res.json();
+          if (data.status === "ok") {
+            status.textContent = `✅ Connected — ${data.models.length} model(s) available`;
+            status.className = "conn-status ok";
+            tags.innerHTML = data.models
+              .map(
+                (m) => `<span class="model-tag" onclick="document.getElementById('modelName').value='${m}'">${m}</span>`,
+              )
+              .join("");
+            log(`Connected to Ollama. Models: ${data.models.join(", ")}`, "ok");
+          } else {
+            status.textContent = `❌ ${data.message}`;
+            status.className = "conn-status err";
+          }
+        } catch (e) {
+          status.textContent = `❌ Connection failed`;
+          status.className = "conn-status err";
+          log(`Connection error: ${e.message}`, "err");
+        }
       }
-    } catch (e) {
-      status.textContent = `❌ Connection failed`;
-      status.className = 'conn-status err';
-      log(`Connection error: ${e.message}`, 'err');
-    }
-  }
 
-  // ── Upload ──────────────────────────────────────────────────────────────────
-  function onDragOver(e) { e.preventDefault(); document.getElementById('uploadArea').classList.add('drag-over'); }
-  function onDragLeave(e) { document.getElementById('uploadArea').classList.remove('drag-over'); }
-  function onDrop(e) {
-    e.preventDefault();
-    document.getElementById('uploadArea').classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file) uploadFile(file);
-  }
-
-  async function uploadFile(file) {
-    if (!file) return;
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (!['pdf', 'docx'].includes(ext)) {
-      alert('Only PDF and DOCX files are supported.');
-      return;
-    }
-    log(`Uploading: ${file.name}...`, 'info');
-    const form = new FormData();
-    form.append('file', file);
-    try {
-      const res = await fetch('/api/upload-pdf', { method: 'POST', body: form });
-      const data = await res.json();
-      if (data.status === 'ok') {
-        uploadedFilename = data.filename;
-        showFileInfo(data.filename, data.pages);
-        log(`Uploaded: ${data.filename} (${data.pages} pages)`, 'ok');
-        if (ext === 'docx') loadTopics(data.filename);
-        await loadUploads();
-      } else {
-        log(`Upload failed: ${data.message}`, 'err');
+      // ── Upload ──────────────────────────────────────────────────────────────────
+      function onDragOver(e) {
+        e.preventDefault();
+        document.getElementById("uploadArea").classList.add("drag-over");
       }
-    } catch (e) {
-      log(`Upload error: ${e.message}`, 'err');
-    }
-  }
-
-  function showFileInfo(name, pages) {
-    document.getElementById('fileName').textContent = name;
-    document.getElementById('filePages').textContent = pages ? `${pages} pages` : '';
-    document.getElementById('fileInfo').classList.add('visible');
-  }
-
-  function removeFile() {
-    uploadedFilename = null;
-    document.getElementById('fileInfo').classList.remove('visible');
-    document.getElementById('fileInput').value = '';
-    document.getElementById('topicsCard').style.display = 'none';
-    topics = [];
-    selectedTopics.clear();
-    log('File removed.', 'info');
-  }
-
-  async function loadUploads() {
-    try {
-      const res = await fetch('/api/list-uploads');
-      const data = await res.json();
-      // sync PDF/DOCX dropdowns
-      ['uploadedFiles', 'stp-file'].forEach(id => {
-        const sel = document.getElementById(id);
-        const cur = sel.value;
-        sel.innerHTML = '<option value="">-- select file --</option>';
-        data.files.filter(f => !f.toLowerCase().endsWith('.pptx')).forEach(f => {
-          const opt = document.createElement('option');
-          opt.value = f; opt.textContent = f;
-          if (f === cur || f === uploadedFilename) opt.selected = true;
-          sel.appendChild(opt);
-        });
-      });
-      // sync PPTX-only dropdown
-      const ptvSel = document.getElementById('ptvSelectFile');
-      const ptvCur = ptvSel.value;
-      ptvSel.innerHTML = '<option value="">-- select PPTX --</option>';
-      data.files.filter(f => f.toLowerCase().endsWith('.pptx')).forEach(f => {
-        const opt = document.createElement('option');
-        opt.value = f; opt.textContent = f;
-        if (f === ptvCur || f === ptvFilename) opt.selected = true;
-        ptvSel.appendChild(opt);
-      });
-    } catch (e) {
-      log(`Failed to list uploads: ${e.message}`, 'err');
-    }
-  }
-
-  async function onSelectUploadedFile() {
-    const sel = document.getElementById('uploadedFiles');
-    const filename = sel.value;
-    if (!filename) return;
-    uploadedFilename = filename;
-    showFileInfo(filename, null);
-    log(`Selected: ${filename}`, 'info');
-    const ext = filename.split('.').pop().toLowerCase();
-    if (ext === 'docx') loadTopics(filename);
-    else {
-      document.getElementById('topicsCard').style.display = 'none';
-      log('PDF selected. No topic extraction for PDF — topics will be auto-generated.', 'info');
-    }
-  }
-
-  // ── Topics ──────────────────────────────────────────────────────────────────
-  async function loadTopics(filename) {
-    log(`Extracting topics from ${filename}...`, 'info');
-    try {
-      const res = await fetch(`/api/extract-topics?filename=${encodeURIComponent(filename)}`);
-      const data = await res.json();
-      if (data.status === 'ok') {
-        topics = data.topics;
-        renderTopics();
-        document.getElementById('topicsCard').style.display = 'block';
-        log(`Found ${topics.length} topics.`, 'ok');
-      } else {
-        log(`Topic extraction failed: ${data.message}`, 'err');
+      function onDragLeave(e) {
+        document.getElementById("uploadArea").classList.remove("drag-over");
       }
-    } catch (e) {
-      log(`Error extracting topics: ${e.message}`, 'err');
-    }
-  }
+      function onDrop(e) {
+        e.preventDefault();
+        document.getElementById("uploadArea").classList.remove("drag-over");
+        const file = e.dataTransfer.files[0];
+        if (file) uploadFile(file);
+      }
 
-  function renderTopics() {
-    const list = document.getElementById('topicList');
-    if (!topics.length) {
-      list.innerHTML = '<div class="empty-state">No topics found in this document.</div>';
-      return;
-    }
-    list.innerHTML = topics.map(t => `
-      <div class="topic-item ${selectedTopics.has(t.num) ? 'selected' : ''}" id="topic-${t.num}" onclick="toggleTopic(${t.num})">
+      async function uploadFile(file) {
+        if (!file) return;
+        const ext = file.name.split(".").pop().toLowerCase();
+        if (!["pdf", "docx"].includes(ext)) {
+          alert("Only PDF and DOCX files are supported.");
+          return;
+        }
+        log(`Uploading: ${file.name}...`, "info");
+        const form = new FormData();
+        form.append("file", file);
+        try {
+          const res = await fetch("/api/upload-pdf", { method: "POST", body: form });
+          const data = await res.json();
+          if (data.status === "ok") {
+            uploadedFilename = data.filename;
+            showFileInfo(data.filename, data.pages);
+            log(`Uploaded: ${data.filename} (${data.pages} pages)`, "ok");
+            if (ext === "docx") loadTopics(data.filename);
+            await loadUploads();
+          } else {
+            log(`Upload failed: ${data.message}`, "err");
+          }
+        } catch (e) {
+          log(`Upload error: ${e.message}`, "err");
+        }
+      }
+
+      function showFileInfo(name, pages) {
+        document.getElementById("fileName").textContent = name;
+        document.getElementById("filePages").textContent = pages ? `${pages} pages` : "";
+        document.getElementById("fileInfo").classList.add("visible");
+      }
+
+      function removeFile() {
+        uploadedFilename = null;
+        document.getElementById("fileInfo").classList.remove("visible");
+        document.getElementById("fileInput").value = "";
+        document.getElementById("topicsCard").style.display = "none";
+        topics = [];
+        selectedTopics.clear();
+        log("File removed.", "info");
+      }
+
+      async function loadUploads() {
+        try {
+          const res = await fetch("/api/list-uploads");
+          const data = await res.json();
+          // sync PDF/DOCX dropdowns
+          ["uploadedFiles", "stp-file"].forEach((id) => {
+            const sel = document.getElementById(id);
+            const cur = sel.value;
+            sel.innerHTML = '<option value="">-- select file --</option>';
+            data.files
+              .filter((f) => !f.toLowerCase().endsWith(".pptx"))
+              .forEach((f) => {
+                const opt = document.createElement("option");
+                opt.value = f;
+                opt.textContent = f;
+                if (f === cur || f === uploadedFilename) opt.selected = true;
+                sel.appendChild(opt);
+              });
+          });
+          // sync PPTX-only dropdown
+          const ptvSel = document.getElementById("ptvSelectFile");
+          const ptvCur = ptvSel.value;
+          ptvSel.innerHTML = '<option value="">-- select PPTX --</option>';
+          data.files
+            .filter((f) => f.toLowerCase().endsWith(".pptx"))
+            .forEach((f) => {
+              const opt = document.createElement("option");
+              opt.value = f;
+              opt.textContent = f;
+              if (f === ptvCur || f === ptvFilename) opt.selected = true;
+              ptvSel.appendChild(opt);
+            });
+        } catch (e) {
+          log(`Failed to list uploads: ${e.message}`, "err");
+        }
+      }
+
+      async function onSelectUploadedFile() {
+        const sel = document.getElementById("uploadedFiles");
+        const filename = sel.value;
+        if (!filename) return;
+        uploadedFilename = filename;
+        showFileInfo(filename, null);
+        log(`Selected: ${filename}`, "info");
+        const ext = filename.split(".").pop().toLowerCase();
+        if (ext === "docx") loadTopics(filename);
+        else {
+          document.getElementById("topicsCard").style.display = "none";
+          log("PDF selected. No topic extraction for PDF — topics will be auto-generated.", "info");
+        }
+      }
+
+      // ── Topics ──────────────────────────────────────────────────────────────────
+      async function loadTopics(filename) {
+        log(`Extracting topics from ${filename}...`, "info");
+        try {
+          const res = await fetch(`/api/extract-topics?filename=${encodeURIComponent(filename)}`);
+          const data = await res.json();
+          if (data.status === "ok") {
+            topics = data.topics;
+            renderTopics();
+            document.getElementById("topicsCard").style.display = "block";
+            log(`Found ${topics.length} topics.`, "ok");
+          } else {
+            log(`Topic extraction failed: ${data.message}`, "err");
+          }
+        } catch (e) {
+          log(`Error extracting topics: ${e.message}`, "err");
+        }
+      }
+
+      function renderTopics() {
+        const list = document.getElementById("topicList");
+        if (!topics.length) {
+          list.innerHTML = '<div class="empty-state">No topics found in this document.</div>';
+          return;
+        }
+        list.innerHTML = topics
+          .map(
+            (t) => `
+      <div class="topic-item ${selectedTopics.has(t.num) ? "selected" : ""}" id="topic-${t.num}" onclick="toggleTopic(${t.num})">
         <div class="num">${t.num}</div>
         <div class="title">${t.title}</div>
         <div class="actions">
@@ -483,329 +894,546 @@
           <button class="btn btn-gold btn-sm" onclick="event.stopPropagation();generateVideoOne(${t.num})">Video</button>
         </div>
       </div>
-    `).join('');
-    updateSelectedCount();
-  }
+    `,
+          )
+          .join("");
+        updateSelectedCount();
+      }
 
-  function toggleTopic(num) {
-    if (selectedTopics.has(num)) selectedTopics.delete(num);
-    else selectedTopics.add(num);
-    const el = document.getElementById(`topic-${num}`);
-    el.classList.toggle('selected', selectedTopics.has(num));
-    updateSelectedCount();
-  }
+      function toggleTopic(num) {
+        if (selectedTopics.has(num)) selectedTopics.delete(num);
+        else selectedTopics.add(num);
+        const el = document.getElementById(`topic-${num}`);
+        el.classList.toggle("selected", selectedTopics.has(num));
+        updateSelectedCount();
+      }
 
-  function selectAll() { topics.forEach(t => selectedTopics.add(t.num)); renderTopics(); }
-  function deselectAll() { selectedTopics.clear(); renderTopics(); }
-  function updateSelectedCount() {
-    document.getElementById('selectedCount').textContent = `${selectedTopics.size} selected`;
-  }
+      function selectAll() {
+        topics.forEach((t) => selectedTopics.add(t.num));
+        renderTopics();
+      }
+      function deselectAll() {
+        selectedTopics.clear();
+        renderTopics();
+      }
+      function updateSelectedCount() {
+        document.getElementById("selectedCount").textContent = `${selectedTopics.size} selected`;
+      }
 
-  // ── Generate ────────────────────────────────────────────────────────────────
-  function getPayloadBase() {
-    const customPrompt = document.getElementById('systemPrompt').value.trim();
-    const payload = {
-      ollama_url: document.getElementById('ollamaUrl').value.trim(),
-      model: document.getElementById('modelName').value.trim(),
-      uploaded_filename: uploadedFilename || null,
-    };
-    if (customPrompt) payload.system_prompt = customPrompt;
-    return payload;
-  }
+      // ── Generate ────────────────────────────────────────────────────────────────
+      function getPayloadBase() {
+        const customPrompt = document.getElementById("systemPrompt").value.trim();
+        const payload = {
+          ollama_url: document.getElementById("ollamaUrl").value.trim(),
+          model: document.getElementById("modelName").value.trim(),
+          uploaded_filename: uploadedFilename || null,
+          language: document.getElementById("outputLanguage").value,
+        };
+        if (customPrompt) payload.system_prompt = customPrompt;
+        return payload;
+      }
 
-  async function generateOne(num) {
-    const topic = topics.find(t => t.num === num);
-    if (!topic) return;
-    await runGenerate([topic], false);
-  }
+      async function generateOne(num) {
+        const topic = topics.find((t) => t.num === num);
+        if (!topic) return;
+        await runGenerate([topic], false);
+      }
 
-  async function generateVideoOne(num) {
-    const topic = topics.find(t => t.num === num);
-    if (!topic) return;
-    await runGenerate([topic], true);
-  }
+      async function generateVideoOne(num) {
+        const topic = topics.find((t) => t.num === num);
+        if (!topic) return;
+        await runGenerate([topic], true);
+      }
 
-  async function generateSelected() {
-    if (!selectedTopics.size) { alert('Select at least one topic.'); return; }
-    const sel = topics.filter(t => selectedTopics.has(t.num));
-    await runGenerate(sel, false);
-  }
-
-  async function generateVideoSelected() {
-    if (!selectedTopics.size) { alert('Select at least one topic.'); return; }
-    const sel = topics.filter(t => selectedTopics.has(t.num));
-    await runGenerate(sel, true);
-  }
-
-  async function runGenerate(topicList, video) {
-    if (isProcessing) { alert('Already processing. Please wait.'); return; }
-    if (!uploadedFilename) { alert('Please upload or select a document first.'); return; }
-    isProcessing = true;
-    showProgress(true);
-    const endpoint = video ? '/api/generate-video' : '/api/generate';
-
-    for (let i = 0; i < topicList.length; i++) {
-      const topic = topicList[i];
-      setProgress(((i) / topicList.length) * 100, `Processing: ${topic.title}`);
-      log(`Generating ${video ? 'video' : 'PPT'} for: ${topic.title}`, 'info');
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...getPayloadBase(), topic })
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          log(`❌ ${topic.title}: ${err.message}`, 'err');
-          continue;
+      async function generateSelected() {
+        if (!selectedTopics.size) {
+          alert("Select at least one topic.");
+          return;
         }
-        const blob = await res.blob();
-        const ext = video ? 'mp4' : 'pptx';
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${String(topic.num).padStart(2,'0')}_${topic.title.replace(/[<>:"/\\|?*]/g,'')}.${ext}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        log(`✅ Downloaded: ${a.download}`, 'ok');
-      } catch (e) {
-        log(`❌ Error for ${topic.title}: ${e.message}`, 'err');
-      }
-    }
-
-    setProgress(100, 'Done!');
-    setTimeout(() => showProgress(false), 2000);
-    isProcessing = false;
-  }
-
-  // ── PPT to Video ────────────────────────────────────────────────────────────
-  let ptvFilename = null;
-
-  function onDragOverPtv(e) { e.preventDefault(); document.getElementById('ptvUploadArea').classList.add('drag-over'); }
-  function onDragLeavePtv(e) { document.getElementById('ptvUploadArea').classList.remove('drag-over'); }
-  function onDropPtv(e) {
-    e.preventDefault();
-    document.getElementById('ptvUploadArea').classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file) uploadPtvFile(file);
-  }
-
-  async function uploadPtvFile(file) {
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.pptx')) { alert('Only .pptx files are supported.'); return; }
-    log(`Uploading PPTX: ${file.name}...`, 'info');
-    const form = new FormData();
-    form.append('file', file);
-    try {
-      const res = await fetch('/api/upload-pdf', { method: 'POST', body: form });
-      const data = await res.json();
-      if (data.status === 'ok') {
-        ptvFilename = data.filename;
-        document.getElementById('ptvFileName').textContent = data.filename;
-        document.getElementById('ptvFileInfo').classList.add('visible');
-        log(`Uploaded PPTX: ${data.filename}`, 'ok');
-        await loadUploads();
-        // auto-select in dropdown
-        document.getElementById('ptvSelectFile').value = data.filename;
-      } else {
-        log(`Upload failed: ${data.message}`, 'err');
-      }
-    } catch (e) {
-      log(`Upload error: ${e.message}`, 'err');
-    }
-  }
-
-  function removePtvFile() {
-    ptvFilename = null;
-    document.getElementById('ptvFileInfo').classList.remove('visible');
-    document.getElementById('ptvFileInput').value = '';
-    document.getElementById('ptvSelectFile').value = '';
-  }
-
-  async function generatePtvVideo() {
-    const selected = document.getElementById('ptvSelectFile').value;
-    const filename = selected || ptvFilename;
-    if (!filename) { alert('Please upload or select a PPTX file.'); return; }
-    if (!filename.toLowerCase().endsWith('.pptx')) { alert('Selected file must be a .pptx'); return; }
-
-    const ttsUrl = document.getElementById('ptvTtsUrl').value.trim();
-    const btn    = document.getElementById('ptvBtn');
-    const status = document.getElementById('ptvStatus');
-    const prog   = document.getElementById('ptvProgress');
-    const fill   = document.getElementById('ptvFill');
-    const label  = document.getElementById('ptvLabel');
-
-    btn.disabled = true;
-    prog.style.display = 'block';
-    fill.style.width = '5%';
-    label.textContent = 'Converting slides to images...';
-    status.textContent = '';
-    log(`Converting "${filename}" to video...`, 'info');
-
-    let pct = 5;
-    const ticker = setInterval(() => {
-      if (pct < 80) { pct += 2; fill.style.width = pct + '%'; }
-    }, 2000);
-
-    try {
-      label.textContent = 'Generating TTS audio & building video...';
-      const body = { filename };
-      if (ttsUrl) body.tts_url = ttsUrl;
-
-      const res = await fetch('/api/pptx-to-video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      clearInterval(ticker);
-
-      if (!res.ok) {
-        const err = await res.json();
-        status.textContent = `❌ ${err.message}`;
-        status.style.color = '#c62828';
-        log(`❌ Failed: ${err.message}`, 'err');
-        return;
+        const sel = topics.filter((t) => selectedTopics.has(t.num));
+        await runGenerate(sel, false);
       }
 
-      fill.style.width = '95%';
-      label.textContent = 'Downloading video...';
-
-      const blob  = await res.blob();
-      const safe  = filename.replace(/\.pptx$/i, '').replace(/[<>:"/\\|?*]/g, '').trim();
-      const fname = `${safe}.mp4`;
-      const url   = URL.createObjectURL(blob);
-      const a     = document.createElement('a');
-      a.href = url; a.download = fname;
-      document.body.appendChild(a); a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      fill.style.width = '100%';
-      label.textContent = `✅ Downloaded: ${fname}`;
-      status.textContent = '✅ Done';
-      status.style.color = '#2e7d32';
-      log(`✅ Video downloaded: ${fname}`, 'ok');
-    } catch (e) {
-      clearInterval(ticker);
-      status.textContent = `❌ Error: ${e.message}`;
-      status.style.color = '#c62828';
-      log(`❌ Error: ${e.message}`, 'err');
-    } finally {
-      btn.disabled = false;
-      setTimeout(() => { prog.style.display = 'none'; fill.style.width = '0%'; }, 4000);
-    }
-  }
-
-  // ── Scheme to PPT ───────────────────────────────────────────────────────────
-  async function generateSchemePPT() {
-    const filename    = document.getElementById('stp-file').value.trim();
-    const scheme_name = document.getElementById('stp-scheme').value.trim();
-    const btn         = document.getElementById('stp-btn');
-    const status      = document.getElementById('stp-status');
-    const progress    = document.getElementById('stp-progress');
-    const fill        = document.getElementById('stp-fill');
-    const label       = document.getElementById('stp-label');
-
-    if (!filename)    { alert('Please select an uploaded file.'); return; }
-    if (!scheme_name) { alert('Please enter a scheme name.'); return; }
-
-    btn.disabled = true;
-    progress.style.display = 'block';
-    fill.style.width = '10%';
-    label.textContent = 'Extracting section from document...';
-    status.textContent = '';
-    log(`Starting: "${scheme_name}" from ${filename}`, 'info');
-
-    // Animate progress while waiting
-    let pct = 10;
-    const ticker = setInterval(() => {
-      if (pct < 85) { pct += 3; fill.style.width = pct + '%'; }
-    }, 1500);
-
-    try {
-      label.textContent = 'Sending to Ollama → building PPT...';
-      const res = await fetch('/api/scheme-to-ppt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename,
-          scheme_name,
-          ollama_url: document.getElementById('ollamaUrl').value.trim(),
-          model:      document.getElementById('modelName').value.trim(),
-        })
-      });
-
-      clearInterval(ticker);
-
-      if (!res.ok) {
-        const err = await res.json();
-        status.textContent = `❌ ${err.message}`;
-        status.style.color = '#c62828';
-        log(`❌ Failed: ${err.message}`, 'err');
-        return;
+      async function generateVideoSelected() {
+        if (!selectedTopics.size) {
+          alert("Select at least one topic.");
+          return;
+        }
+        const sel = topics.filter((t) => selectedTopics.has(t.num));
+        await runGenerate(sel, true);
       }
 
-      fill.style.width = '95%';
-      label.textContent = 'Downloading PPT...';
+      async function runGenerate(topicList, video) {
+        if (isProcessing) {
+          alert("Already processing. Please wait.");
+          return;
+        }
+        if (!uploadedFilename) {
+          alert("Please upload or select a document first.");
+          return;
+        }
+        isProcessing = true;
+        showProgress(true);
+        const endpoint = video ? "/api/generate-video" : "/api/generate";
 
-      const blob  = await res.blob();
-      const safe  = scheme_name.replace(/[<>:"/\\|?*]/g, '').trim();
-      const fname = `${safe}.pptx`;
-      const url   = URL.createObjectURL(blob);
-      const a     = document.createElement('a');
-      a.href = url; a.download = fname;
-      document.body.appendChild(a); a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+        for (let i = 0; i < topicList.length; i++) {
+          const topic = topicList[i];
+          setProgress((i / topicList.length) * 100, `Processing: ${topic.title}`);
+          log(`Generating ${video ? "video" : "PPT"} for: ${topic.title}`, "info");
+          try {
+            const res = await fetch(endpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ...getPayloadBase(), topic }),
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              log(`❌ ${topic.title}: ${err.message}`, "err");
+              continue;
+            }
+            const blob = await res.blob();
+            const ext = video ? "mp4" : "pptx";
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${String(topic.num).padStart(2, "0")}_${topic.title.replace(/[<>:"/\\|?*]/g, "")}.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            log(`✅ Downloaded: ${a.download}`, "ok");
+          } catch (e) {
+            log(`❌ Error for ${topic.title}: ${e.message}`, "err");
+          }
+        }
 
-      fill.style.width = '100%';
-      label.textContent = `✅ Downloaded: ${fname}`;
-      status.textContent = `✅ Done`;
-      status.style.color = '#2e7d32';
-      log(`✅ Downloaded: ${fname}`, 'ok');
-    } catch (e) {
-      clearInterval(ticker);
-      status.textContent = `❌ Error: ${e.message}`;
-      status.style.color = '#c62828';
-      log(`❌ Error: ${e.message}`, 'err');
-    } finally {
-      btn.disabled = false;
-      setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 3000);
-    }
-  }
+        setProgress(100, "Done!");
+        setTimeout(() => showProgress(false), 2000);
+        isProcessing = false;
+      }
 
-  // ── Tabs ────────────────────────────────────────────────────────────────────
-  function switchTab(name) {
-    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['default','custom'][i] === name));
-    document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', ['tab-default','tab-custom'][i] === `tab-${name}`));
-  }
+      // ── PPT to Video ────────────────────────────────────────────────────────────
+      let ptvFilename = null;
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-  function log(msg, type = 'info') {
-    const box = document.getElementById('logBox');
-    const span = document.createElement('span');
-    span.className = `log-${type}`;
-    const time = new Date().toLocaleTimeString();
-    span.textContent = `[${time}] ${msg}`;
-    box.appendChild(document.createElement('br'));
-    box.appendChild(span);
-    box.scrollTop = box.scrollHeight;
-  }
+      function onDragOverPtv(e) {
+        e.preventDefault();
+        document.getElementById("ptvUploadArea").classList.add("drag-over");
+      }
+      function onDragLeavePtv(e) {
+        document.getElementById("ptvUploadArea").classList.remove("drag-over");
+      }
+      function onDropPtv(e) {
+        e.preventDefault();
+        document.getElementById("ptvUploadArea").classList.remove("drag-over");
+        const file = e.dataTransfer.files[0];
+        if (file) uploadPtvFile(file);
+      }
 
-  function showProgress(visible) {
-    document.getElementById('progressWrap').classList.toggle('visible', visible);
-  }
+      async function uploadPtvFile(file) {
+        if (!file) return;
+        if (!file.name.toLowerCase().endsWith(".pptx")) {
+          alert("Only .pptx files are supported.");
+          return;
+        }
+        log(`Uploading PPTX: ${file.name}...`, "info");
+        const form = new FormData();
+        form.append("file", file);
+        try {
+          const res = await fetch("/api/upload-pdf", { method: "POST", body: form });
+          const data = await res.json();
+          if (data.status === "ok") {
+            ptvFilename = data.filename;
+            document.getElementById("ptvFileName").textContent = data.filename;
+            document.getElementById("ptvFileInfo").classList.add("visible");
+            log(`Uploaded PPTX: ${data.filename}`, "ok");
+            await loadUploads();
+            // auto-select in dropdown
+            document.getElementById("ptvSelectFile").value = data.filename;
+          } else {
+            log(`Upload failed: ${data.message}`, "err");
+          }
+        } catch (e) {
+          log(`Upload error: ${e.message}`, "err");
+        }
+      }
 
-  function setProgress(pct, label) {
-    document.getElementById('progressFill').style.width = `${pct}%`;
-    document.getElementById('progressLabel').textContent = label;
-  }
+      function removePtvFile() {
+        ptvFilename = null;
+        document.getElementById("ptvFileInfo").classList.remove("visible");
+        document.getElementById("ptvFileInput").value = "";
+        document.getElementById("ptvSelectFile").value = "";
+      }
 
-  // ── Init ─────────────────────────────────────────────────────────────────────
-  loadUploads();
-</script>
-</body>
+      async function generatePtvVideo() {
+        const selected = document.getElementById("ptvSelectFile").value;
+        const filename = selected || ptvFilename;
+        if (!filename) {
+          alert("Please upload or select a PPTX file.");
+          return;
+        }
+        if (!filename.toLowerCase().endsWith(".pptx")) {
+          alert("Selected file must be a .pptx");
+          return;
+        }
+
+        const ttsUrl = document.getElementById("ptvTtsUrl").value.trim();
+        const btn = document.getElementById("ptvBtn");
+        const status = document.getElementById("ptvStatus");
+        const prog = document.getElementById("ptvProgress");
+        const fill = document.getElementById("ptvFill");
+        const label = document.getElementById("ptvLabel");
+
+        btn.disabled = true;
+        prog.style.display = "block";
+        fill.style.width = "5%";
+        label.textContent = "Converting slides to images...";
+        status.textContent = "";
+        log(`Converting "${filename}" to video...`, "info");
+
+        let pct = 5;
+        const ticker = setInterval(() => {
+          if (pct < 80) {
+            pct += 2;
+            fill.style.width = pct + "%";
+          }
+        }, 2000);
+
+        try {
+          label.textContent = "Generating TTS audio & building video...";
+          const body = { filename };
+          if (ttsUrl) body.tts_url = ttsUrl;
+
+          const res = await fetch("/api/pptx-to-video", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+
+          clearInterval(ticker);
+
+          if (!res.ok) {
+            const err = await res.json();
+            status.textContent = `❌ ${err.message}`;
+            status.style.color = "#c62828";
+            log(`❌ Failed: ${err.message}`, "err");
+            return;
+          }
+
+          fill.style.width = "95%";
+          label.textContent = "Downloading video...";
+
+          const blob = await res.blob();
+          const safe = filename
+            .replace(/\.pptx$/i, "")
+            .replace(/[<>:"/\\|?*]/g, "")
+            .trim();
+          const fname = `${safe}.mp4`;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fname;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          fill.style.width = "100%";
+          label.textContent = `✅ Downloaded: ${fname}`;
+          status.textContent = "✅ Done";
+          status.style.color = "#2e7d32";
+          log(`✅ Video downloaded: ${fname}`, "ok");
+        } catch (e) {
+          clearInterval(ticker);
+          status.textContent = `❌ Error: ${e.message}`;
+          status.style.color = "#c62828";
+          log(`❌ Error: ${e.message}`, "err");
+        } finally {
+          btn.disabled = false;
+          setTimeout(() => {
+            prog.style.display = "none";
+            fill.style.width = "0%";
+          }, 4000);
+        }
+      }
+
+      // ── Scheme to PPT ───────────────────────────────────────────────────────────
+      async function generateSchemePPT() {
+        const filename = document.getElementById("stp-file").value.trim();
+        const scheme_name = document.getElementById("stp-scheme").value.trim();
+        const btn = document.getElementById("stp-btn");
+        const status = document.getElementById("stp-status");
+        const progress = document.getElementById("stp-progress");
+        const fill = document.getElementById("stp-fill");
+        const label = document.getElementById("stp-label");
+
+        if (!filename) {
+          alert("Please select an uploaded file.");
+          return;
+        }
+        if (!scheme_name) {
+          alert("Please enter a scheme name.");
+          return;
+        }
+
+        btn.disabled = true;
+        progress.style.display = "block";
+        fill.style.width = "10%";
+        label.textContent = "Extracting section from document...";
+        status.textContent = "";
+        log(`Starting: "${scheme_name}" from ${filename}`, "info");
+
+        // Animate progress while waiting
+        let pct = 10;
+        const ticker = setInterval(() => {
+          if (pct < 85) {
+            pct += 3;
+            fill.style.width = pct + "%";
+          }
+        }, 1500);
+
+        try {
+          label.textContent = "Sending to Ollama → building PPT...";
+          const res = await fetch("/api/scheme-to-ppt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              filename,
+              scheme_name,
+              ollama_url: document.getElementById("ollamaUrl").value.trim(),
+              model: document.getElementById("modelName").value.trim(),
+              language: document.getElementById("outputLanguage").value,
+            }),
+          });
+
+          clearInterval(ticker);
+
+          if (!res.ok) {
+            const err = await res.json();
+            status.textContent = `❌ ${err.message}`;
+            status.style.color = "#c62828";
+            log(`❌ Failed: ${err.message}`, "err");
+            return;
+          }
+
+          fill.style.width = "95%";
+          label.textContent = "Downloading PPT...";
+
+          const blob = await res.blob();
+          const safe = scheme_name.replace(/[<>:"/\\|?*]/g, "").trim();
+          const fname = `${safe}.pptx`;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fname;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          fill.style.width = "100%";
+          label.textContent = `✅ Downloaded: ${fname}`;
+          status.textContent = `✅ Done`;
+          status.style.color = "#2e7d32";
+          log(`✅ Downloaded: ${fname}`, "ok");
+        } catch (e) {
+          clearInterval(ticker);
+          status.textContent = `❌ Error: ${e.message}`;
+          status.style.color = "#c62828";
+          log(`❌ Error: ${e.message}`, "err");
+        } finally {
+          btn.disabled = false;
+          setTimeout(() => {
+            progress.style.display = "none";
+            fill.style.width = "0%";
+          }, 3000);
+        }
+      }
+
+      // ── Tabs ────────────────────────────────────────────────────────────────────
+      function switchTab(name) {
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((b, i) => b.classList.toggle("active", ["default", "custom"][i] === name));
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((c, i) => c.classList.toggle("active", ["tab-default", "tab-custom"][i] === `tab-${name}`));
+      }
+
+      // ── Helpers ─────────────────────────────────────────────────────────────────
+      function log(msg, type = "info") {
+        const box = document.getElementById("logBox");
+        const span = document.createElement("span");
+        span.className = `log-${type}`;
+        const time = new Date().toLocaleTimeString();
+        span.textContent = `[${time}] ${msg}`;
+        box.appendChild(document.createElement("br"));
+        box.appendChild(span);
+        box.scrollTop = box.scrollHeight;
+      }
+
+      function showProgress(visible) {
+        document.getElementById("progressWrap").classList.toggle("visible", visible);
+      }
+
+      function setProgress(pct, label) {
+        document.getElementById("progressFill").style.width = `${pct}%`;
+        document.getElementById("progressLabel").textContent = label;
+      }
+
+      // ── DOCX + Images → PPT ────────────────────────────────────────────────────
+      let diDocxFile = null;
+      let diImageFiles = [];
+
+      function diSetDocx(file) {
+        if (!file) return;
+        diDocxFile = file;
+        document.getElementById("diDocxName").textContent = file.name;
+        document.getElementById("diDocxInfo").classList.add("visible");
+        document.getElementById("diDocxArea").classList.remove("drag-over");
+      }
+
+      function diClearDocx() {
+        diDocxFile = null;
+        document.getElementById("diDocxInfo").classList.remove("visible");
+        document.getElementById("diDocxInput").value = "";
+      }
+
+      function diOnDropDocx(e) {
+        e.preventDefault();
+        document.getElementById("diDocxArea").classList.remove("drag-over");
+        const file = e.dataTransfer.files[0];
+        if (file) diSetDocx(file);
+      }
+
+      function diAddImages(files) {
+        const allowed = ["png", "jpg", "jpeg", "gif", "bmp", "webp"];
+        for (const f of files) {
+          const ext = f.name.split(".").pop().toLowerCase();
+          if (allowed.includes(ext)) diImageFiles.push(f);
+        }
+        diRenderImageList();
+        document.getElementById("diImgArea").classList.remove("drag-over");
+      }
+
+      function diOnDropImgs(e) {
+        e.preventDefault();
+        diAddImages(e.dataTransfer.files);
+      }
+
+      function diRenderImageList() {
+        const el = document.getElementById("diImgList");
+        if (!diImageFiles.length) {
+          el.innerHTML = "";
+          return;
+        }
+        el.innerHTML = diImageFiles
+          .map(
+            (f, i) =>
+              `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span>🖼️ ${f.name}</span>
+        <span style="color:#e53935;cursor:pointer;font-weight:bold" onclick="diRemoveImage(${i})">×</span>
+      </div>`,
+          )
+          .join("");
+      }
+
+      function diRemoveImage(idx) {
+        diImageFiles.splice(idx, 1);
+        diRenderImageList();
+      }
+
+      async function generateDocxImagePPT() {
+        if (!diDocxFile) {
+          alert("Please select a DOCX file.");
+          return;
+        }
+
+        const btn = document.getElementById("diBtn");
+        const status = document.getElementById("diStatus");
+        const prog = document.getElementById("diProgress");
+        const fill = document.getElementById("diFill");
+        const label = document.getElementById("diLabel");
+
+        btn.disabled = true;
+        prog.style.display = "block";
+        fill.style.width = "5%";
+        label.textContent = "Uploading files...";
+        status.textContent = "";
+        log(`Starting DOCX+Images → PPT for: ${diDocxFile.name}`, "info");
+
+        let pct = 5;
+        const ticker = setInterval(() => {
+          if (pct < 85) {
+            pct += 2;
+            fill.style.width = pct + "%";
+          }
+        }, 2000);
+
+        try {
+          const form = new FormData();
+          form.append("docx_file", diDocxFile);
+          diImageFiles.forEach((img) => form.append("images", img));
+          form.append("scheme_name", document.getElementById("diSchemeName").value.trim());
+          form.append("ollama_url", document.getElementById("diOllamaUrl").value.trim());
+          form.append("model", document.getElementById("modelName").value.trim());
+          form.append("num_slides", document.getElementById("diNumSlides").value);
+          form.append("imgs_per_slide", document.getElementById("diImgsPerSlide").value);
+          form.append("language", document.getElementById("outputLanguage").value);
+
+          const diLogo = document.getElementById("diLogoInput").files[0];
+          if (diLogo) form.append("logo", diLogo);
+
+          label.textContent = "Generating slides via Ollama...";
+          const res = await fetch("/api/docx-image-to-ppt", { method: "POST", body: form });
+          clearInterval(ticker);
+
+          if (!res.ok) {
+            const err = await res.json();
+            status.textContent = `❌ ${err.message}`;
+            status.style.color = "#c62828";
+            log(`❌ Failed: ${err.message}`, "err");
+            return;
+          }
+
+          fill.style.width = "95%";
+          label.textContent = "Downloading PPT...";
+
+          const blob = await res.blob();
+          const safe = diDocxFile.name
+            .replace(/\.docx$/i, "")
+            .replace(/[<>:"/\\|?*]/g, "")
+            .trim();
+          const fname = `${safe}_with_images.pptx`;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fname;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          fill.style.width = "100%";
+          label.textContent = `✅ Downloaded: ${fname}`;
+          status.textContent = "✅ Done";
+          status.style.color = "#2e7d32";
+          log(`✅ Downloaded: ${fname}`, "ok");
+        } catch (e) {
+          clearInterval(ticker);
+          status.textContent = `❌ Error: ${e.message}`;
+          status.style.color = "#c62828";
+          log(`❌ Error: ${e.message}`, "err");
+        } finally {
+          btn.disabled = false;
+          setTimeout(() => {
+            prog.style.display = "none";
+            fill.style.width = "0%";
+          }, 4000);
+        }
+      }
+
+      // ── Init ─────────────────────────────────────────────────────────────────────
+      loadUploads();
+    </script>
+  </body>
 </html>
